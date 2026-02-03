@@ -1,0 +1,432 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Vision Galaxy Society — Frontend implementation plan",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Add role-based login UI (Flat Owner / Secretary / Guard) and route users to role dashboards while showing role + identifier and handling invalid credentials.",
+      "acceptanceCriteria": [
+        "Login screen supports entering a userId and password and successfully routes users to role-appropriate dashboards.",
+        "Backend contains seeded accounts for flat owners 1–23 with default password \"Admin1\" and seeded Secretary and Guard accounts.",
+        "After login, the UI clearly shows the logged-in role and identifier (e.g., Flat 12).",
+        "Invalid credentials show an English error message and do not log in."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Update the frontend backend interface typings as needed to support password-based login/session behavior required by REQ-1 (e.g., a backend capability to validate userId/password and return the associated UserProfile/role)."
+        },
+        {
+          "path": "frontend/src/hooks/useActor.ts",
+          "operation": "modify",
+          "description": "Adjust actor initialization to support the app’s login/session approach (including clearing cached data on logout) and to enable calling backend capabilities used by the login screen."
+        },
+        {
+          "path": "frontend/src/auth/AuthSessionProvider.tsx",
+          "operation": "create",
+          "description": "Create an app-level auth/session provider to manage userId/password login state, store the resolved role/identifier, and expose login/logout helpers to the UI."
+        },
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "create",
+          "description": "Create a login screen with userId + password inputs, English validation/errors, and submit handling that calls the backend capability for credential validation; on success, store session and route to the correct role dashboard."
+        },
+        {
+          "path": "frontend/src/components/auth/RoleGate.tsx",
+          "operation": "create",
+          "description": "Create a simple route guard wrapper that redirects unauthenticated users to Login and blocks role-incompatible navigation while showing an English access message."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "create",
+          "description": "Add app routing and wiring: register LoginPage and role dashboards, wrap protected routes with RoleGate, and ensure post-login routing lands users on the appropriate dashboard."
+        },
+        {
+          "path": "frontend/src/components/layout/TopBar.tsx",
+          "operation": "create",
+          "description": "Create a top bar that clearly shows the logged-in role and identifier (e.g., Flat 12 / Secretary / Guard) and provides a Logout action."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Provide an in-app Change Password screen for any logged-in user with current password verification and update flow.",
+      "acceptanceCriteria": [
+        "A “Change Password” screen is accessible after login.",
+        "Changing password requires correct current password; wrong current password is rejected.",
+        "After successful change, user can log out and log in with the new password."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ChangePasswordPage.tsx",
+          "operation": "create",
+          "description": "Create a Change Password screen (current password + new password) that calls the backend changePassword capability and shows English success/error states."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire ChangePasswordPage into the router and ensure it is accessible only after login (and reachable from each role’s navigation)."
+        },
+        {
+          "path": "frontend/src/components/layout/RoleNav.tsx",
+          "operation": "create",
+          "description": "Create a role-based navigation component that includes a consistent “Change Password” entry for Flat Owner, Secretary, and Guard."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Implement maintenance monthly status, UPI deep link initiation, payment submission (UTR + timestamp), and secretary review with approve/reject.",
+      "acceptanceCriteria": [
+        "Flat Owner dashboard shows current month maintenance status (Unpaid / Submitted / Approved / Rejected).",
+        "“Pay via UPI” opens a UPI deep link built from the configured UPI ID and the entered/assigned amount.",
+        "User can submit a payment record with UTR/reference and date/time after paying.",
+        "Secretary dashboard lists flats 1–23 with filterable payment status and shows UTR/reference details for submitted payments.",
+        "Secretary can approve/reject a submitted payment; the Flat Owner sees the updated status."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/dates.ts",
+          "operation": "create",
+          "description": "Add shared helpers to compute current month/year labels and handle basic date/time formatting for maintenance and submissions."
+        },
+        {
+          "path": "frontend/src/utils/upi.ts",
+          "operation": "create",
+          "description": "Add a utility to build a UPI deep link (upi://pay) from configured UPI ID, amount, and a human-readable note; ensure output is safe for use in a link click."
+        },
+        {
+          "path": "frontend/src/pages/flat/MaintenancePage.tsx",
+          "operation": "create",
+          "description": "Create the Flat Owner maintenance page showing current month status, a “Pay via UPI” action using the configured UPI ID, and a form to record submission with UTR and payment date/time calling the backend recordPayment capability."
+        },
+        {
+          "path": "frontend/src/pages/secretary/PaymentsPage.tsx",
+          "operation": "create",
+          "description": "Create the Secretary payments page that lists flats 1–23 for the selected month/year, supports filtering by status, shows UTR/timestamps where present, and provides approve/reject actions via the backend capability that updates payment status."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire MaintenancePage under Flat Owner navigation and PaymentsPage under Secretary navigation; ensure role gating is enforced."
+        },
+        {
+          "path": "frontend/src/pages/flat/FlatDashboardPage.tsx",
+          "operation": "create",
+          "description": "Create a Flat Owner dashboard card/summary for current month maintenance status with a clear primary action linking to the Maintenance page."
+        },
+        {
+          "path": "frontend/src/pages/secretary/SecretaryDashboardPage.tsx",
+          "operation": "create",
+          "description": "Create a Secretary dashboard card/summary highlighting payment review workload (e.g., submitted/overdue counts) with a primary action linking to Payments."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Show automatic overdue reminders for maintenance on/after the 6th and provide secretary overdue list visibility.",
+      "acceptanceCriteria": [
+        "On/after the 6th day of the month, flats with no Approved payment show an “Overdue” notice in the Flat Owner app.",
+        "Secretary can view a list of overdue flats for the current month.",
+        "Before the 6th, overdue reminders are not shown for the current month."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/overdue.ts",
+          "operation": "create",
+          "description": "Add shared logic to determine whether the current date is on/after the 6th of the month and to conditionally enable overdue UI."
+        },
+        {
+          "path": "frontend/src/components/notices/OverdueBanner.tsx",
+          "operation": "create",
+          "description": "Create a reusable in-app overdue banner component shown to Flat Owners when on/after the 6th and their status is not Approved."
+        },
+        {
+          "path": "frontend/src/pages/flat/FlatDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Add overdue reminder display using OverdueBanner when applicable, based on backend-provided maintenance status and the on/after-6th rule."
+        },
+        {
+          "path": "frontend/src/pages/secretary/OverduePage.tsx",
+          "operation": "create",
+          "description": "Create a Secretary overdue page that, on/after the 6th, shows the backend-provided overdue flat list for the current month/year; before the 6th, show an English message that overdue reminders are not active yet."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire the Secretary Overdue page into the router and secretary navigation; ensure role gating is enforced."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Allow the Secretary to enter monthly expenditures (line items, totals, notes) and allow Flat Owners to view expenditures read-only by month.",
+      "acceptanceCriteria": [
+        "Secretary can create/update an expenditure entry for a selected month with multiple line items and notes.",
+        "All Flat Owners can view expenditures by month in a read-only screen.",
+        "Totals per month are displayed and equal the sum of line items."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/expenditures/ExpenditureEditor.tsx",
+          "operation": "create",
+          "description": "Create a Secretary-only editor component supporting month selection, add/remove line items (description + amount), optional notes, and live total calculation; use shadcn-ui form/input components for consistent UI. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/secretary/ExpendituresAdminPage.tsx",
+          "operation": "create",
+          "description": "Create the Secretary expenditures admin page that loads an existing month entry (if present) and saves updates via the backend recordExpenditure capability; show English success/error states."
+        },
+        {
+          "path": "frontend/src/pages/flat/ExpendituresPage.tsx",
+          "operation": "create",
+          "description": "Create the Flat Owner read-only expenditures page with month selection and display of line items, notes, and total from backend getExpenditures."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire the Secretary Expenditures admin page and the Flat Owner Expenditures page into the router and role-based navigation; ensure role gating is enforced."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Add Secretary settings UI to configure UPI ID and WhatsApp sender number and ensure the configured values are used in UPI/WhatsApp deep links.",
+      "acceptanceCriteria": [
+        "Secretary can update UPI ID and WhatsApp sender number in a settings screen.",
+        "Configured UPI ID is used to generate the UPI payment deep link.",
+        "Configured WhatsApp number is shown/used when creating WhatsApp request links in the guard workflow."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/secretary/SettingsPage.tsx",
+          "operation": "create",
+          "description": "Create the Secretary settings screen to view/update configured UPI ID and WhatsApp sender number using backend getUpiId/setUpiId and getWhatsappNumber/setWhatsappNumber; include English validation and save feedback."
+        },
+        {
+          "path": "frontend/src/pages/flat/MaintenancePage.tsx",
+          "operation": "modify",
+          "description": "Use the configured UPI ID from backend getUpiId when building the UPI deep link via the shared UPI utility."
+        },
+        {
+          "path": "frontend/src/pages/guard/VisitorRequestsPage.tsx",
+          "operation": "create",
+          "description": "Create a Guard visitor requests page that shows the configured WhatsApp sender number (read-only) and uses it as part of the guard workflow UI (e.g., displayed instruction/context alongside the WhatsApp deep link)."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire SettingsPage for Secretary and VisitorRequestsPage for Guard into the router and navigation; ensure role gating is enforced."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Provide a Flat Owner profile screen to manage up to 4 mobile numbers with add/edit/remove and enforce the limit; allow Secretary/Guard to view numbers where relevant.",
+      "acceptanceCriteria": [
+        "Flat Owner can add up to 4 mobile numbers; adding a 5th is blocked with an English message.",
+        "Flat Owner can edit and remove previously added numbers.",
+        "Secretary and Guard can view the flat’s configured numbers where relevant to workflows."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/flat/ProfilePage.tsx",
+          "operation": "create",
+          "description": "Create the Flat Owner profile page to load/save the flat’s mobile numbers via backend getFlatMobileNumbers/updateFlatMobileNumbers, enforce max 4 with an English message, and support add/edit/remove."
+        },
+        {
+          "path": "frontend/src/components/profile/MobileNumbersEditor.tsx",
+          "operation": "create",
+          "description": "Create a reusable mobile numbers editor component with max-4 enforcement and basic formatting guidance; use shadcn-ui inputs/buttons for consistent UI. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/guard/VisitorRequestCreatePage.tsx",
+          "operation": "create",
+          "description": "Create a Guard flow page to create a visitor request for a selected flat and allow choosing among the flat’s configured mobile numbers (loaded via backend getFlatMobileNumbers) before generating the WhatsApp deep link."
+        },
+        {
+          "path": "frontend/src/pages/secretary/PaymentsPage.tsx",
+          "operation": "modify",
+          "description": "Where appropriate to the workflow, display a flat’s configured mobile numbers (read-only) to the Secretary when reviewing records that reference the flat."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire ProfilePage for Flat Owner and VisitorRequestCreatePage for Guard into the router and navigation; ensure role gating is enforced."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Implement complaints for Flat Owners (lodge, list, detail with status) and Secretary complaint management (view all, filter, update status, add resolution note).",
+      "acceptanceCriteria": [
+        "Flat Owner can submit a complaint and sees it immediately in their complaint list.",
+        "Secretary can see all complaints with filters by status and flat number.",
+        "Secretary status changes and resolution notes are visible to the Flat Owner on the complaint detail screen."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/flat/ComplaintsPage.tsx",
+          "operation": "create",
+          "description": "Create a Flat Owner complaints page that includes a lodge-complaint form (category, description, optional priority), lists the user’s complaints from backend getComplaintsByFlat, and links to a complaint detail view."
+        },
+        {
+          "path": "frontend/src/pages/flat/ComplaintDetailPage.tsx",
+          "operation": "create",
+          "description": "Create a Flat Owner complaint detail page showing status and secretary resolution note (if present) from the retrieved complaint data."
+        },
+        {
+          "path": "frontend/src/pages/secretary/ComplaintsAdminPage.tsx",
+          "operation": "create",
+          "description": "Create a Secretary complaints admin page that lists all complaints from backend getAllComplaints, supports filtering by status and flat number, and allows updating status and resolution note via backend updateComplaintStatus."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire complaints pages into Flat Owner and Secretary navigation and routing; ensure role gating is enforced and complaint detail routes are registered."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Add notices/announcements: Secretary can create notices (with optional expiry) and all users can view a feed and detail view excluding expired notices.",
+      "acceptanceCriteria": [
+        "Secretary can create a notice that appears for all users.",
+        "Users can view a list of notices ordered newest-first and open a notice detail view.",
+        "Expired notices (if expiry is set) do not appear after the expiry date."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/common/NoticesPage.tsx",
+          "operation": "create",
+          "description": "Create a shared notices feed page for Flat Owner/Guard/Secretary that loads notices from backend getAllNotices, filters out expired notices client-side, orders newest-first, and links to a notice detail view."
+        },
+        {
+          "path": "frontend/src/pages/common/NoticeDetailPage.tsx",
+          "operation": "create",
+          "description": "Create a shared notice detail page to display title/message and expiry (if present) in a readable layout."
+        },
+        {
+          "path": "frontend/src/pages/secretary/CreateNoticePage.tsx",
+          "operation": "create",
+          "description": "Create a Secretary-only notice creation page that submits title/message/optional expiry date via backend createNotice and returns to the notices feed with English success feedback."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire notices feed/detail for all roles and the Secretary-only create-notice route; ensure role gating is enforced."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "Implement Guard visitor requests with WhatsApp deep links and in-app Flat Owner accept/decline that updates Guard status views.",
+      "acceptanceCriteria": [
+        "Guard can create a visitor request tied to a flat and see it in a guard-side list with status (Pending/Accepted/Declined).",
+        "App provides a WhatsApp deep link with a pre-filled message containing visitor details and the request ID.",
+        "Flat Owner can view pending visitor requests for their flat and accept or decline them in-app.",
+        "When accepted/declined, the Guard’s view updates to show the final decision and timestamp."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/whatsapp.ts",
+          "operation": "create",
+          "description": "Add a utility to generate a WhatsApp “send message” deep link with recipient mobile number and a pre-filled English message including visitor details and the request ID."
+        },
+        {
+          "path": "frontend/src/pages/guard/VisitorRequestsPage.tsx",
+          "operation": "modify",
+          "description": "Expand the Guard visitor requests page to show a list of requests from backend getAllVisitorRequests with status, details, and a WhatsApp deep link action that uses the shared WhatsApp utility and the configured WhatsApp sender number for on-screen guidance."
+        },
+        {
+          "path": "frontend/src/pages/guard/VisitorRequestDetailPage.tsx",
+          "operation": "create",
+          "description": "Create a Guard visitor request detail view showing flat, mobile used, visitor details, status, and timestamps where available, updating based on backend state."
+        },
+        {
+          "path": "frontend/src/pages/flat/VisitorRequestsPage.tsx",
+          "operation": "create",
+          "description": "Create a Flat Owner visitor requests page that shows pending requests for their flat from backend getVisitorRequestsForFlat and allows accept/decline actions via backend updateVisitorRequestStatus, with immediate UI refresh."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire Guard and Flat Owner visitor request list/detail pages into routing and role-based navigation; ensure role gating is enforced."
+        }
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "summary": "Create an easy-format UI with role-based dashboards and consistent English navigation for Flat Owner, Secretary, and Guard.",
+      "acceptanceCriteria": [
+        "Each role lands on a dashboard with large, clear primary actions.",
+        "Navigation labels are in English and consistent across the app.",
+        "Core tasks (pay maintenance, submit complaint, create notice, create visitor request) are reachable within 1–2 clicks from the dashboard."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "operation": "create",
+          "description": "Create a shared layout with a clear header, role badge/identifier, and a prominent role-based navigation surface (large buttons/cards) to keep core tasks within 1–2 clicks."
+        },
+        {
+          "path": "frontend/src/components/layout/DashboardCard.tsx",
+          "operation": "create",
+          "description": "Create a reusable dashboard card component for large primary actions (Maintenance, Complaints, Notices, Visitor Requests, etc.) using shadcn-ui primitives for consistent styling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/guard/GuardDashboardPage.tsx",
+          "operation": "create",
+          "description": "Create a Guard dashboard with large primary actions for Visitor Requests and read-only Settings access where applicable."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Ensure the router lands each role on its dashboard and that dashboards link to all required modules with consistent English navigation labels."
+        }
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "summary": "Define and apply a coherent non-blue/purple visual theme for Vision Galaxy Society with consistent typography, spacing, and a unified card/layout system.",
+      "acceptanceCriteria": [
+        "App uses a consistent theme (colors, typography, component styling) across login and all dashboards/pages.",
+        "Theme is applied via Tailwind styling and shared layout components so pages look unified."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "create",
+          "description": "Add Tailwind base/components/utilities plus CSS variables for a cohesive non-blue/purple palette (e.g., emerald/teal + warm neutrals), consistent typography defaults, and shared surface/card styling tokens."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Extend Tailwind theme tokens to align with the Vision Galaxy Society palette/typography and ensure consistent spacing/radius/shadows for the card/layout system."
+        },
+        {
+          "path": "frontend/public/assets/generated/vision-galaxy-logo.dim_512x512.png",
+          "operation": "create",
+          "description": "Add the generated society logo asset at the required path and wire it into the UI (e.g., login header/top bar branding) as a static frontend asset."
+        },
+        {
+          "path": "frontend/public/assets/generated/vision-galaxy-bg.dim_1920x1080.png",
+          "operation": "create",
+          "description": "Add the generated abstract background pattern at the required path and apply it appropriately (e.g., as a subtle dashboard/login background) via the shared layout styling."
+        },
+        {
+          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "operation": "modify",
+          "description": "Apply the shared theme (spacing, surfaces, typography) and incorporate the generated background pattern and logo in a consistent, subtle way across screens."
+        },
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Apply the shared theme and incorporate the generated logo for consistent branding on the login screen."
+        }
+      ]
+    }
+  ]
+}

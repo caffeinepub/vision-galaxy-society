@@ -1,0 +1,269 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-create-a-simple-role-based-authentication-system-for-the-app-vision-galaxy-society-with-three-user-types-flat-owner-secretary-and-guard-flat-owner-accounts-must-exist-for-flat-numbers-1-23-with-userid-equal-to-the-flat-number-e-g-1-2-23-and-default-password-exactly-admin1-secretary-and-guard-logins-must-also-exist-provide-login-ids-in-the-ui-and-seed-them-in-backend",
+      "featureTitle": "Create a simple role-based authentication system for the app “Vision Galaxy Society” with three user types: Flat Owner, Secretary, and Guard. Flat Owner accounts must exist for flat numbers 1–23 with userId equal to the flat number (e.g., \"1\", \"2\", … \"23\") and default password exactly \"Admin1\". Secretary and Guard logins must also exist (provide login IDs in the UI and seed them in backend).",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/hooks/useActor.ts",
+        "frontend/src/pages/LoginPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-in-app-password-change-for-any-logged-in-user-flat-owner-secretary-guard-require-the-user-to-enter-current-password-and-new-password-update-stored-credentials-so-the-new-password-works-and-the-old-one-no-longer-works",
+      "featureTitle": "Add in-app password change for any logged-in user (Flat Owner / Secretary / Guard). Require the user to enter current password and new password; update stored credentials so the new password works and the old one no longer works.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/ChangePasswordPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-maintenance-contribution-tracking-per-month-and-per-flat-with-an-in-app-upi-payment-initiation-flow-and-secretary-side-visibility-users-must-be-able-to-1-view-current-month-due-status-2-initiate-upi-payment-using-a-upi-deep-link-upi-pay-generated-from-configured-upi-id-and-amount-and-3-record-the-payment-as-submitted-by-entering-a-upi-transaction-reference-utr-and-payment-date-time-secretary-must-be-able-to-view-all-flats-payment-statuses-and-recorded-references",
+      "featureTitle": "Implement maintenance contribution tracking per month and per flat, with an in-app UPI payment initiation flow and secretary-side visibility. Users must be able to: (1) view current month due status, (2) initiate UPI payment using a UPI deep link (upi://pay) generated from configured UPI ID and amount, and (3) record the payment as submitted by entering a UPI transaction reference (UTR) and payment date/time. Secretary must be able to view all flats’ payment statuses and recorded references.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/flat/FlatDashboardPage.tsx",
+        "frontend/src/pages/flat/MaintenancePage.tsx",
+        "frontend/src/pages/secretary/PaymentsPage.tsx",
+        "frontend/src/pages/secretary/SecretaryDashboardPage.tsx",
+        "frontend/src/utils/dates.ts",
+        "frontend/src/utils/upi.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-automatic-in-app-overdue-reminder-notices-for-maintenance-if-payment-is-not-completed-by-the-6th-of-the-month-the-reminder-must-appear-to-the-flat-owner-as-an-in-app-notice-and-also-be-visible-to-the-secretary-as-an-overdue-list-notice-view",
+      "featureTitle": "Add automatic in-app overdue reminder notices for maintenance if payment is not completed by the 6th of the month. The reminder must appear to the Flat Owner as an in-app notice and also be visible to the Secretary as an overdue list/notice view.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/flat/FlatDashboardPage.tsx",
+        "frontend/src/pages/secretary/OverduePage.tsx",
+        "frontend/src/utils/overdue.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-allow-the-secretary-to-upload-enter-monthly-expenditure-details-that-can-be-viewed-by-all-flat-owners-expenditures-must-support-month-selection-line-items-description-amount-total-calculation-and-an-optional-notes-field",
+      "featureTitle": "Allow the Secretary to upload (enter) monthly expenditure details that can be viewed by all Flat Owners. Expenditures must support month selection, line items (description + amount), total calculation, and an optional notes field.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/flat/ExpendituresPage.tsx",
+        "frontend/src/pages/secretary/ExpendituresAdminPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-secretary-admin-configuration-screens-to-set-1-the-upi-id-that-receives-maintenance-payments-and-2-the-whatsapp-number-from-which-visitor-approval-requests-are-sent-store-these-values-in-backend-and-use-them-when-generating-upi-deep-links-and-whatsapp-message-links",
+      "featureTitle": "Add secretary-admin configuration screens to set: (1) the UPI ID that receives maintenance payments, and (2) the WhatsApp number from which visitor approval requests are sent. Store these values in backend and use them when generating UPI deep links and WhatsApp message links.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/flat/MaintenancePage.tsx",
+        "frontend/src/pages/guard/VisitorRequestsPage.tsx",
+        "frontend/src/pages/secretary/SettingsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-for-each-flat-owner-provide-a-profile-screen-to-manage-up-to-4-mobile-numbers-for-receiving-approval-related-communication-enforce-a-maximum-of-4-numbers-and-allow-add-edit-remove",
+      "featureTitle": "For each Flat Owner, provide a profile screen to manage up to 4 mobile numbers for receiving approval-related communication. Enforce a maximum of 4 numbers and allow add/edit/remove.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/flat/ProfilePage.tsx",
+        "frontend/src/pages/guard/VisitorRequestCreatePage.tsx",
+        "frontend/src/pages/secretary/PaymentsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-a-complaints-module-flat-owners-can-lodge-complaints-category-description-optional-priority-view-their-complaint-list-and-see-current-status-secretary-can-view-all-complaints-update-status-e-g-open-in-progress-resolved-rejected-and-add-a-resolution-note-that-is-visible-to-the-complaining-user",
+      "featureTitle": "Implement a complaints module: Flat Owners can lodge complaints (category, description, optional priority), view their complaint list, and see current status. Secretary can view all complaints, update status (e.g., Open/In Progress/Resolved/Rejected), and add a resolution note that is visible to the complaining user.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/flat/ComplaintDetailPage.tsx",
+        "frontend/src/pages/flat/ComplaintsPage.tsx",
+        "frontend/src/pages/secretary/ComplaintsAdminPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-in-app-notices-announcements-feature-where-the-secretary-can-create-notices-title-message-optional-expiry-date-and-all-flat-owners-and-guard-can-view-them-in-a-notices-feed",
+      "featureTitle": "Add an in-app notices/announcements feature where the Secretary can create notices (title, message, optional expiry date), and all Flat Owners (and Guard) can view them in a notices feed.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/common/NoticeDetailPage.tsx",
+        "frontend/src/pages/common/NoticesPage.tsx",
+        "frontend/src/pages/secretary/CreateNoticePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-a-guard-visitor-request-workflow-using-whatsapp-deep-links-guard-can-create-a-visitor-request-for-a-target-flat-1-23-with-visitor-name-and-purpose-the-app-must-generate-a-whatsapp-send-message-deep-link-pre-filled-to-the-flat-s-selected-mobile-number-or-allow-choosing-among-the-flat-s-up-to-4-numbers-the-flat-owner-must-be-able-to-accept-decline-inside-the-app-the-decision-must-be-visible-on-the-guard-s-request-list-detail-screen",
+      "featureTitle": "Implement a Guard visitor request workflow using WhatsApp deep links: Guard can create a visitor request for a target flat (1–23) with visitor name and purpose. The app must generate a WhatsApp “send message” deep link pre-filled to the flat’s selected mobile number (or allow choosing among the flat’s up to 4 numbers). The Flat Owner must be able to accept/decline inside the app; the decision must be visible on the Guard’s request list/detail screen.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/flat/VisitorRequestsPage.tsx",
+        "frontend/src/pages/guard/VisitorRequestDetailPage.tsx",
+        "frontend/src/pages/guard/VisitorRequestsPage.tsx",
+        "frontend/src/utils/whatsapp.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-10"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-an-easy-format-ui-with-role-based-dashboards-and-straightforward-navigation-flat-owner-maintenance-notices-expenditures-complaints-visitor-requests-profile-secretary-payments-overdue-expenditures-complaints-notices-settings-guard-visitor-requests-settings-read-only-where-applicable",
+      "featureTitle": "Create an “easy format” UI with role-based dashboards and straightforward navigation: Flat Owner (Maintenance, Notices, Expenditures, Complaints, Visitor Requests, Profile), Secretary (Payments, Overdue, Expenditures, Complaints, Notices, Settings), Guard (Visitor Requests, Settings read-only where applicable).",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/layout/AppLayout.tsx",
+        "frontend/src/components/layout/DashboardCard.tsx",
+        "frontend/src/pages/guard/GuardDashboardPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-11"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-define-and-apply-a-coherent-visual-theme-for-vision-galaxy-society-distinct-color-palette-not-based-on-blue-purple-consistent-typography-spacing-and-card-layout-system-across-all-screens",
+      "featureTitle": "Define and apply a coherent visual theme for “Vision Galaxy Society” (distinct color palette not based on blue/purple, consistent typography, spacing, and card/layout system) across all screens.",
+      "files": [
+        "frontend/src/components/layout/AppLayout.tsx",
+        "frontend/src/index.css",
+        "frontend/src/pages/LoginPage.tsx",
+        "frontend/tailwind.config.js"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-12"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

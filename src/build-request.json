@@ -1,0 +1,243 @@
+{
+  "kind": "build_request",
+  "title": "Vision Galaxy Society — Role-based society management (maintenance, notices, expenditures, complaints, visitor requests)",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Create a simple role-based authentication system for the app “Vision Galaxy Society” with three user types: Flat Owner, Secretary, and Guard. Flat Owner accounts must exist for flat numbers 1–23 with userId equal to the flat number (e.g., \"1\", \"2\", … \"23\") and default password exactly \"Admin1\". Secretary and Guard logins must also exist (provide login IDs in the UI and seed them in backend).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "create an application ... named as \"Vision Galaxy Society\" separate logins for all flat owner ie 1-23 ... with their user id as flat no and password as default\"Admin1\" and secretary and guard Login should be also there."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Login screen supports entering a userId and password and successfully routes users to role-appropriate dashboards.",
+        "Backend contains seeded accounts for flat owners 1–23 with default password \"Admin1\" and seeded Secretary and Guard accounts.",
+        "After login, the UI clearly shows the logged-in role and identifier (e.g., Flat 12).",
+        "Invalid credentials show an English error message and do not log in."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add in-app password change for any logged-in user (Flat Owner / Secretary / Guard). Require the user to enter current password and new password; update stored credentials so the new password works and the old one no longer works.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "there should be an option to change the password in the App itself."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A “Change Password” screen is accessible after login.",
+        "Changing password requires correct current password; wrong current password is rejected.",
+        "After successful change, user can log out and log in with the new password."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Implement maintenance contribution tracking per month and per flat, with an in-app UPI payment initiation flow and secretary-side visibility. Users must be able to: (1) view current month due status, (2) initiate UPI payment using a UPI deep link (upi://pay) generated from configured UPI ID and amount, and (3) record the payment as submitted by entering a UPI transaction reference (UTR) and payment date/time. Secretary must be able to view all flats’ payment statuses and recorded references.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "The maintenance Contribution should be collected through the application itself by upi and the can be seen at secretaries end."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Flat Owner dashboard shows current month maintenance status (Unpaid / Submitted / Approved / Rejected).",
+        "“Pay via UPI” opens a UPI deep link built from the configured UPI ID and the entered/assigned amount.",
+        "User can submit a payment record with UTR/reference and date/time after paying.",
+        "Secretary dashboard lists flats 1–23 with filterable payment status and shows UTR/reference details for submitted payments.",
+        "Secretary can approve/reject a submitted payment; the Flat Owner sees the updated status."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add automatic in-app overdue reminder notices for maintenance if payment is not completed by the 6th of the month. The reminder must appear to the Flat Owner as an in-app notice and also be visible to the Secretary as an overdue list/notice view.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "The system should also send notice if the payment hasn't been done till 6th of the month."
+        ]
+      },
+      "acceptanceCriteria": [
+        "On/after the 6th day of the month, flats with no Approved payment show an “Overdue” notice in the Flat Owner app.",
+        "Secretary can view a list of overdue flats for the current month.",
+        "Before the 6th, overdue reminders are not shown for the current month."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Allow the Secretary to upload (enter) monthly expenditure details that can be viewed by all Flat Owners. Expenditures must support month selection, line items (description + amount), total calculation, and an optional notes field.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "The secretary would have an option to upload monthly expenditure that can be viewed by all the users"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Secretary can create/update an expenditure entry for a selected month with multiple line items and notes.",
+        "All Flat Owners can view expenditures by month in a read-only screen.",
+        "Totals per month are displayed and equal the sum of line items."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Add secretary-admin configuration screens to set: (1) the UPI ID that receives maintenance payments, and (2) the WhatsApp number from which visitor approval requests are sent. Store these values in backend and use them when generating UPI deep links and WhatsApp message links.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "Also add a feature to enter the upi id on which payment should be recieved and also the WhatsApp number from which the request is send ."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Secretary can update UPI ID and WhatsApp sender number in a settings screen.",
+        "Configured UPI ID is used to generate the UPI payment deep link.",
+        "Configured WhatsApp number is shown/used when creating WhatsApp request links in the guard workflow."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "For each Flat Owner, provide a profile screen to manage up to 4 mobile numbers for receiving approval-related communication. Enforce a maximum of 4 numbers and allow add/edit/remove.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "The users should have options to add mobile number on which the request approval will come and maximum mobile number entered there can be 4."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Flat Owner can add up to 4 mobile numbers; adding a 5th is blocked with an English message.",
+        "Flat Owner can edit and remove previously added numbers.",
+        "Secretary and Guard can view the flat’s configured numbers where relevant to workflows."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Implement a complaints module: Flat Owners can lodge complaints (category, description, optional priority), view their complaint list, and see current status. Secretary can view all complaints, update status (e.g., Open/In Progress/Resolved/Rejected), and add a resolution note that is visible to the complaining user.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "The users should have options for the complaint lodging and can be seen at the secretary side with the status on the users application."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Flat Owner can submit a complaint and sees it immediately in their complaint list.",
+        "Secretary can see all complaints with filters by status and flat number.",
+        "Secretary status changes and resolution notes are visible to the Flat Owner on the complaint detail screen."
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "Add an in-app notices/announcements feature where the Secretary can create notices (title, message, optional expiry date), and all Flat Owners (and Guard) can view them in a notices feed.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "secretary can also send any notice on the application to all the users."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Secretary can create a notice that appears for all users.",
+        "Users can view a list of notices ordered newest-first and open a notice detail view.",
+        "Expired notices (if expiry is set) do not appear after the expiry date."
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "text": "Implement a Guard visitor request workflow using WhatsApp deep links: Guard can create a visitor request for a target flat (1–23) with visitor name and purpose. The app must generate a WhatsApp “send message” deep link pre-filled to the flat’s selected mobile number (or allow choosing among the flat’s up to 4 numbers). The Flat Owner must be able to accept/decline inside the app; the decision must be visible on the Guard’s request list/detail screen.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "the guard should have options for sending request to flat owners where the visitor want to go through WhatsApp .if the request is accepted or declined it would show on the guard's application."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Guard can create a visitor request tied to a flat and see it in a guard-side list with status (Pending/Accepted/Declined).",
+        "App provides a WhatsApp deep link with a pre-filled message containing visitor details and the request ID.",
+        "Flat Owner can view pending visitor requests for their flat and accept or decline them in-app.",
+        "When accepted/declined, the Guard’s view updates to show the final decision and timestamp."
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "text": "Create an “easy format” UI with role-based dashboards and straightforward navigation: Flat Owner (Maintenance, Notices, Expenditures, Complaints, Visitor Requests, Profile), Secretary (Payments, Overdue, Expenditures, Complaints, Notices, Settings), Guard (Visitor Requests, Settings read-only where applicable).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "It should be in an easy format"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each role lands on a dashboard with large, clear primary actions.",
+        "Navigation labels are in English and consistent across the app.",
+        "Core tasks (pay maintenance, submit complaint, create notice, create visitor request) are reachable within 1–2 clicks from the dashboard."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "Define and apply a coherent visual theme for “Vision Galaxy Society” (distinct color palette not based on blue/purple, consistent typography, spacing, and card/layout system) across all screens.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ]
+      },
+      "acceptanceCriteria": [
+        "App uses a consistent theme (colors, typography, component styling) across login and all dashboards/pages.",
+        "Theme is applied via Tailwind styling and shared layout components so pages look unified."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must be implemented as a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not edit files under frontend/src/components/ui or other immutablePaths; compose them from outside those directories.",
+    "User-facing text in the app must be in English.",
+    "No third-party WhatsApp API integration; implement WhatsApp interaction via deep links only.",
+    "No direct UPI payment verification integration; implement UPI initiation via deep link and record user-entered payment reference/status in-app."
+  ],
+  "nonGoals": [
+    "Implementing real-time push notifications, SMS, or WhatsApp message delivery/status tracking beyond in-app status and deep links.",
+    "Integrating external payment gateways or verifying UPI transactions with bank/PSP APIs.",
+    "Supporting more than flats 1–23 unless explicitly requested later.",
+    "Adding multiple backends, external databases, or non-Motoko services."
+  ],
+  "imageRequirements": {
+    "required": [
+      "Society logo mark with text “Vision Galaxy Society” in a clean emblem style (vision-galaxy-logo.dim_512x512.png)",
+      "Subtle abstract background pattern suitable for dashboards (vision-galaxy-bg.dim_1920x1080.png)"
+    ],
+    "edits": []
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "frontend/src/App.tsx": "Main application component with TanStack Router setup, route definitions for all pages, and root component handling authentication state and layout rendering.",
+  "frontend/src/components/layout/AppLayout.tsx": "Shared layout component providing header with logo and user info, responsive navigation menu, main content area, and footer for all authenticated pages.",
+  "frontend/src/pages/guard/VisitorRequestsPage.tsx": "Guard page displaying all visitor requests with status badges, allowing navigation to create new requests and view request details.",
+  "frontend/src/pages/guard/VisitorRequestCreatePage.tsx": "Guard page for creating new visitor requests with visitor details, flat selection, mobile number selection, and WhatsApp deep link generation for sending approval requests.",
+  "frontend/src/pages/guard/VisitorRequestDetailPage.tsx": "Guard page showing detailed information about a specific visitor request including visitor name, purpose, flat number, contact number, and current status.",
+  "frontend/src/pages/flat/VisitorRequestsPage.tsx": "Flat owner page displaying visitor requests for their flat with ability to accept or decline pending requests and view request history.",
+  "frontend/src/index.css": "Global CSS file with Tailwind directives and OKLCH-based design tokens for light and dark themes using a teal/blue color palette for Vision Galaxy Society."
+}
