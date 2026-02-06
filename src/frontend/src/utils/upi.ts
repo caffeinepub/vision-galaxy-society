@@ -1,10 +1,12 @@
-export function buildUpiDeepLink(upiId: string, amount: number, note: string): string {
+export function buildUpiDeepLink(upiId: string, amount: bigint | number, note: string): string {
   if (!upiId) return '';
+  
+  const amountValue = typeof amount === 'bigint' ? Number(amount) : amount;
   
   const params = new URLSearchParams({
     pa: upiId,
     pn: 'Vision Galaxy Society',
-    am: amount.toString(),
+    am: amountValue.toString(),
     cu: 'INR',
     tn: note,
   });

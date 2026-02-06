@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { UserProfile, MaintenanceRecord, Complaint, Notice, VisitorRequest, Notification, Expenditure } from '../backend';
+import type { UserProfile, MaintenanceRecord, Complaint, Notice, VisitorRequest, Notification, Expenditure, SecretarySettings, FlatPaymentStatus } from '../backend';
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -73,6 +73,7 @@ export function useRecordPayment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceRecord'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceRecords'] });
+      queryClient.invalidateQueries({ queryKey: ['maintenanceStatusForAllFlats'] });
       queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
     },
   });
@@ -104,6 +105,19 @@ export function useGetAllMaintenanceRecords(month: string, year: bigint) {
   });
 }
 
+export function useGetMaintenanceStatusForAllFlats(month: string, year: bigint) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<FlatPaymentStatus[]>({
+    queryKey: ['maintenanceStatusForAllFlats', month, year.toString()],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getMaintenanceStatusForAllFlats(month, year);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
 export function useGetUpiId() {
   const { actor, isFetching } = useActor();
 
@@ -128,6 +142,7 @@ export function useSetUpiId() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['upiId'] });
+      queryClient.invalidateQueries({ queryKey: ['secretarySettings'] });
     },
   });
 }
@@ -156,7 +171,52 @@ export function useSetWhatsappNumber() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsappNumber'] });
+      queryClient.invalidateQueries({ queryKey: ['secretarySettings'] });
     },
+  });
+}
+
+export function useGetSecretarySettings() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<SecretarySettings>({
+    queryKey: ['secretarySettings'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getSecretarySettings();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useUpdateSecretarySettings() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (newSettings: SecretarySettings) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateSecretarySettings(newSettings);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['secretarySettings'] });
+      queryClient.invalidateQueries({ queryKey: ['maintenanceAmount'] });
+      queryClient.invalidateQueries({ queryKey: ['upiId'] });
+      queryClient.invalidateQueries({ queryKey: ['whatsappNumber'] });
+    },
+  });
+}
+
+export function useGetMaintenanceAmount() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<bigint>({
+    queryKey: ['maintenanceAmount'],
+    queryFn: async () => {
+      if (!actor) return BigInt(0);
+      return actor.getMaintenanceAmount();
+    },
+    enabled: !!actor && !isFetching,
   });
 }
 

@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { useGetCallerUserProfile, useGetVisitorRequestsByFlat, useUpdateVisitorRequestStatus } from '../../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { isValidFlatNumber } from '../../utils/flatNumbers';
 
 export default function FlatVisitorRequestsPage() {
   const { data: userProfile } = useGetCallerUserProfile();
@@ -12,13 +16,46 @@ export default function FlatVisitorRequestsPage() {
   const { data: requests = [], isLoading } = useGetVisitorRequestsByFlat(flatNumber);
   const updateStatusMutation = useUpdateVisitorRequestStatus();
 
-  const handleAccept = async (requestId: bigint) => {
+  const [flatNumberInputs, setFlatNumberInputs] = useState<Record<string, string>>({});
+
+  const handleFlatNumberChange = (requestId: string, value: string) => {
+    setFlatNumberInputs(prev => ({
+      ...prev,
+      [requestId]: value
+    }));
+  };
+
+  const handleAccept = async (requestId: bigint, requestFlatNumber: bigint) => {
+    const requestIdStr = requestId.toString();
+    const inputFlatNumber = flatNumberInputs[requestIdStr];
+
+    if (!inputFlatNumber || inputFlatNumber.trim() === '') {
+      toast.error('Please enter the flat number');
+      return;
+    }
+
+    if (!isValidFlatNumber(inputFlatNumber)) {
+      toast.error('Invalid flat number. Must be within valid range (e.g., 101-523)');
+      return;
+    }
+
+    if (BigInt(inputFlatNumber) !== requestFlatNumber) {
+      toast.error('Flat number must match the request');
+      return;
+    }
+
     try {
       await updateStatusMutation.mutateAsync({
         requestId,
         status: 'Approved',
       });
       toast.success('Visitor request approved!');
+      // Clear the input after successful approval
+      setFlatNumberInputs(prev => {
+        const newInputs = { ...prev };
+        delete newInputs[requestIdStr];
+        return newInputs;
+      });
     } catch (error: any) {
       toast.error(error.message || 'Failed to approve request');
     }
@@ -31,6 +68,13 @@ export default function FlatVisitorRequestsPage() {
         status: 'Declined',
       });
       toast.success('Visitor request declined');
+      // Clear the input after declining
+      const requestIdStr = requestId.toString();
+      setFlatNumberInputs(prev => {
+        const newInputs = { ...prev };
+        delete newInputs[requestIdStr];
+        return newInputs;
+      });
     } catch (error: any) {
       toast.error(error.message || 'Failed to decline request');
     }
@@ -87,30 +131,46 @@ export default function FlatVisitorRequestsPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-2 text-sm">
                   <div className="flex justify-between">
+                    <span className="text-muted-foreground">Flat Number:</span>
+                    <span className="font-medium">{request.flatNumber.toString()}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Contact Number:</span>
                     <span className="font-medium">{request.mobileNumber}</span>
                   </div>
                 </div>
 
                 {request.status === 'Pending' && (
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={() => handleAccept(request.id)}
-                      disabled={updateStatusMutation.isPending}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Approve
-                    </Button>
-                    <Button
-                      onClick={() => handleDecline(request.id)}
-                      disabled={updateStatusMutation.isPending}
-                      variant="destructive"
-                      className="flex-1"
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Decline
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`flat-${request.id}`}>Confirm Flat Number</Label>
+                      <Input
+                        id={`flat-${request.id}`}
+                        type="text"
+                        placeholder="Enter flat number (e.g., 101)"
+                        value={flatNumberInputs[request.id.toString()] || ''}
+                        onChange={(e) => handleFlatNumberChange(request.id.toString(), e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => handleAccept(request.id, request.flatNumber)}
+                        disabled={updateStatusMutation.isPending}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Approve
+                      </Button>
+                      <Button
+                        onClick={() => handleDecline(request.id)}
+                        disabled={updateStatusMutation.isPending}
+                        variant="destructive"
+                        className="flex-1"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Decline
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>

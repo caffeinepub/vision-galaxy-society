@@ -1,41 +1,48 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T09:09:42.493Z",
+  "generatedAt": "2026-02-06T13:00:51.233Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the app startup/auth gate to handle failures when loading the caller user profile so the UI never gets stuck on an indefinite loading screen. Specifically, when `useGetCallerUserProfile()` returns an error (e.g., backend unreachable / actor not available), render a clear error state with recovery actions instead of showing the “Setting up your profile...” spinner.",
+        "summary": "Ensure the app never renders as a fully blank page in Draft/Preview by adding an HTML-level startup fallback UI in frontend/index.html that is visible before React mounts and that automatically switches to an error state if the JS app does not bootstrap within a short timeout (e.g., 5–10 seconds). The fallback must include a plain HTML message, a standard reload action, and a hard-reload action that clears service worker + caches (best-effort) and then reloads.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/StartupErrorScreen.tsx",
+          "frontend/index.html",
           "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/StartupErrorScreen.tsx",
+          "frontend/index.html",
           "frontend/src/App.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add a safe client-side recovery path for cases where the PWA/service worker cache or a bad client state prevents the app from opening, by providing a “Hard reload” action in the startup error UI that clears relevant browser caches (including service worker caches if present) and reloads the page.",
+        "summary": "Add additional startup diagnostics to help identify why Draft is blank by logging critical bootstrap failures in a way that can be seen without React (e.g., console logging from index.html, plus rendering a short human-readable error hint in the HTML fallback when a script error/unhandled rejection occurs before React mounts). All user-facing text must be English.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/hardReload.ts",
-          "frontend/src/components/StartupErrorScreen.tsx",
-          "frontend/src/App.tsx"
+          "frontend/index.html"
         ],
         "matchedFiles": [
-          "frontend/src/utils/hardReload.ts",
-          "frontend/src/components/StartupErrorScreen.tsx",
-          "frontend/src/App.tsx"
+          "frontend/index.html"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Force service worker cache invalidation again to eliminate stale behavior affecting Draft/Preview by bumping the cache version in frontend/public/sw.js and confirming the fetch handler never returns cached index.html for non-navigation requests (scripts/styles/assets/modules).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/public/sw.js"
+        ],
+        "matchedFiles": [
+          "frontend/public/sw.js"
         ]
       }
     ]
@@ -45,9 +52,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/index.html",
+    "frontend/public/sw.js",
     "frontend/src/App.tsx",
-    "frontend/src/components/StartupErrorScreen.tsx",
-    "frontend/src/utils/hardReload.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

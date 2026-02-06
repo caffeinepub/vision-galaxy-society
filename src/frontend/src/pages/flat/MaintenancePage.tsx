@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGetCallerUserProfile, useGetMaintenanceRecord, useRecordPayment, useGetUpiId } from '../../hooks/useQueries';
+import { useGetCallerUserProfile, useGetMaintenanceRecord, useRecordPayment, useGetMaintenanceAmount, useGetUpiId } from '../../hooks/useQueries';
 import { getCurrentMonth, getCurrentYear, getAllMonths, getYearRange } from '../../utils/dates';
 import { buildUpiDeepLink } from '../../utils/upi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, Clock, XCircle, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MaintenancePage() {
@@ -22,8 +22,12 @@ export default function MaintenancePage() {
   const [paymentDate, setPaymentDate] = useState('');
 
   const { data: maintenanceRecord } = useGetMaintenanceRecord(flatNumber, selectedMonth, selectedYear);
+  const { data: maintenanceAmount } = useGetMaintenanceAmount();
   const { data: upiId } = useGetUpiId();
   const recordPaymentMutation = useRecordPayment();
+
+  const amount = maintenanceAmount ? Number(maintenanceAmount) : 0;
+  const isAmountConfigured = amount > 0;
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +55,7 @@ export default function MaintenancePage() {
     }
   };
 
-  const upiLink = buildUpiDeepLink(upiId || '', 1500, `Maintenance ${selectedMonth} ${selectedYear}`);
+  const upiLink = buildUpiDeepLink(upiId || '', maintenanceAmount || BigInt(0), `Maintenance ${selectedMonth} ${selectedYear}`);
 
   const getStatusBadge = () => {
     if (!maintenanceRecord) {
@@ -69,6 +73,15 @@ export default function MaintenancePage() {
         <h1 className="text-3xl font-bold">Maintenance Payment</h1>
         <p className="text-muted-foreground mt-1">Manage your monthly maintenance contributions</p>
       </div>
+
+      {!isAmountConfigured && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Maintenance amount is not configured. Please contact the secretary to set up the monthly maintenance amount.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -127,17 +140,17 @@ export default function MaintenancePage() {
             <CardContent className="space-y-4">
               <Alert>
                 <AlertDescription>
-                  Amount: ₹1,500 • UPI ID: {upiId || 'Not configured'}
+                  Amount: {isAmountConfigured ? `₹${amount.toLocaleString('en-IN')}` : 'Not configured'} • UPI ID: {upiId || 'Not configured'}
                 </AlertDescription>
               </Alert>
               <Button 
                 className="w-full" 
                 size="lg"
-                disabled={!upiId}
+                disabled={!upiId || !isAmountConfigured}
                 onClick={() => window.location.href = upiLink}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Pay ₹1,500 via UPI
+                {isAmountConfigured ? `Pay ₹${amount.toLocaleString('en-IN')} via UPI` : 'Payment Not Available'}
               </Button>
             </CardContent>
           </Card>

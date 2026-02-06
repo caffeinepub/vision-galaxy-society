@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Prevent the app from hanging on startup when loading the caller user profile fails by showing a clear error state with recovery actions.
+**Goal:** Prevent Draft/Preview from ever showing a fully blank screen by adding an HTML-level startup fallback, improved pre-React diagnostics, and refreshed service worker caching behavior.
 
 **Planned changes:**
-- Update the startup/auth gate UI to render an error screen when `useGetCallerUserProfile()` returns an error instead of staying on the “Setting up your profile...” loading spinner.
-- Add a “Retry” action that re-attempts loading the profile using React Query refetch/invalidation so the app can proceed once the backend is reachable again.
-- Add a “Logout” action in the startup error UI to let the user re-authenticate if the session/identity is in a bad state.
-- Add a “Hard reload” action that best-effort clears app Cache Storage entries, attempts service worker unregister (if present), and reloads without uncaught exceptions.
+- Add an HTML startup fallback UI in `frontend/index.html` that shows immediately before React mounts, then hides when the app successfully bootstraps.
+- Implement a short bootstrap timeout (e.g., 5–10 seconds) that switches the fallback into an error state if React/JS does not mount in time, with Reload and Hard Reload (Clear Cache) actions.
+- Add pre-React startup diagnostics: console logging from `index.html` and a short English on-screen hint when a script error or unhandled rejection occurs before React mounts.
+- Bump the service worker cache version in `frontend/public/sw.js` and adjust fetch handling to ensure cached `index.html` is only used for true navigation/document requests (not scripts/styles/assets/modules).
 
-**User-visible outcome:** If the app can’t load required startup data, users see an error screen (instead of infinite loading) with buttons to Retry, Logout, or Hard reload to recover and get the app opening again.
+**User-visible outcome:** Opening the Draft/Preview URL will always show either the app or a visible HTML fallback (never a blank page). If startup fails, the user sees an English error hint plus Reload and Hard Reload (Clear Cache) options to recover.

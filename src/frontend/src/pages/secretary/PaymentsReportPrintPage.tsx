@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useGetAllMaintenanceRecords } from '../../hooks/useQueries';
+import { useGetMaintenanceStatusForAllFlats } from '../../hooks/useQueries';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
@@ -11,13 +11,13 @@ export default function PaymentsReportPrintPage() {
   const month = params.get('month') || '';
   const year = params.get('year') || '';
 
-  const { data: records = [], isLoading, error } = useGetAllMaintenanceRecords(month, BigInt(year));
+  const { data: flatStatuses = [], isLoading, error } = useGetMaintenanceStatusForAllFlats(month, BigInt(year));
 
   useEffect(() => {
-    if (!isLoading && records.length > 0) {
+    if (!isLoading && flatStatuses.length > 0) {
       setTimeout(() => triggerPrint(), 500);
     }
-  }, [isLoading, records]);
+  }, [isLoading, flatStatuses]);
 
   if (isLoading) {
     return (
@@ -35,8 +35,8 @@ export default function PaymentsReportPrintPage() {
     );
   }
 
-  const paidCount = records.filter(r => r.isPaid).length;
-  const unpaidCount = records.filter(r => !r.isPaid).length;
+  const paidCount = flatStatuses.filter(s => s.isPaid).length;
+  const unpaidCount = flatStatuses.filter(s => !s.isPaid).length;
 
   return (
     <div className="p-8 max-w-5xl mx-auto print-content">
@@ -44,7 +44,7 @@ export default function PaymentsReportPrintPage() {
         <h1 className="text-3xl font-bold mb-2">Payment Report</h1>
         <p className="text-lg text-muted-foreground">{month} {year}</p>
         <div className="mt-4 flex gap-6 text-sm">
-          <div>Total Flats: <strong>{records.length}</strong></div>
+          <div>Total Flats: <strong>{flatStatuses.length}</strong></div>
           <div>Paid: <strong className="text-green-600">{paidCount}</strong></div>
           <div>Unpaid: <strong className="text-red-600">{unpaidCount}</strong></div>
         </div>
@@ -60,17 +60,17 @@ export default function PaymentsReportPrintPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {records.map((record, idx) => (
+          {flatStatuses.map((status, idx) => (
             <TableRow key={idx}>
-              <TableCell className="font-medium">Flat {record.flatNumber.toString()}</TableCell>
+              <TableCell className="font-medium">Flat {status.flatNumber.toString()}</TableCell>
               <TableCell>
-                <Badge variant={record.isPaid ? 'default' : 'destructive'}>
-                  {record.isPaid ? 'Paid' : 'Unpaid'}
+                <Badge variant={status.isPaid ? 'default' : 'destructive'}>
+                  {status.isPaid ? 'Paid' : 'Unpaid'}
                 </Badge>
               </TableCell>
-              <TableCell>{record.upiRef || 'N/A'}</TableCell>
+              <TableCell>{status.upiRef || 'N/A'}</TableCell>
               <TableCell>
-                {record.paymentTimestamp ? formatDate(record.paymentTimestamp) : 'N/A'}
+                {status.paymentTimestamp ? formatDate(status.paymentTimestamp) : 'N/A'}
               </TableCell>
             </TableRow>
           ))}

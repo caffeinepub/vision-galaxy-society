@@ -33,6 +33,7 @@ import NoticesReportPrintPage from './pages/secretary/NoticesReportPrintPage';
 import AppLayout from './components/layout/AppLayout';
 import ProfileSetupModal from './components/ProfileSetupModal';
 import StartupErrorScreen from './components/StartupErrorScreen';
+import StartupErrorBoundary from './components/StartupErrorBoundary';
 import { Toaster } from '@/components/ui/sonner';
 
 function RootComponent() {
@@ -42,6 +43,12 @@ function RootComponent() {
   const queryClient = useQueryClient();
 
   const isAuthenticated = !!identity;
+
+  // Signal React has mounted successfully
+  useEffect(() => {
+    // Dispatch event to hide HTML fallback
+    window.dispatchEvent(new Event('react-mounted'));
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && !profileLoading && isFetched && userProfile === null) {
@@ -117,7 +124,16 @@ function RootComponent() {
 function IndexComponent() {
   const { data: userProfile } = useGetCallerUserProfile();
   
-  if (!userProfile) return null;
+  if (!userProfile) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (userProfile.userType === 'FlatOwner') {
     return <FlatDashboardPage />;
@@ -307,19 +323,22 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({ routeTree });
 
+// Register service worker with hosting-safe path
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    // Use relative path for service worker
+    navigator.serviceWorker.register('./sw.js').catch(() => {
       // Service worker registration failed, continue without it
+      console.warn('Service worker registration failed - continuing without offline support');
     });
   });
 }
 
 export default function App() {
   return (
-    <>
+    <StartupErrorBoundary>
       <RouterProvider router={router} />
       <Toaster />
-    </>
+    </StartupErrorBoundary>
   );
 }

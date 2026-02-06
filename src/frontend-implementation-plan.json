@@ -1,55 +1,57 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Startup auth gate: fail-fast error UI with retry, logout, and hard reload recovery",
+  "title": "Draft/Preview non-blank startup fallback, diagnostics, and SW cache invalidation",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Prevent app startup from hanging by rendering a clear startup error UI when loading the caller user profile fails, with Retry and Logout recovery actions.",
+      "summary": "Add an HTML-level startup fallback in index.html that prevents a blank screen and escalates to an error state with Reload and Hard Reload actions if React/JS doesn't mount in time.",
       "acceptanceCriteria": [
-        "If `getCallerUserProfile` fails (network error, canister error, or actor not available), the app shows an error screen instead of an infinite loading state.",
-        "The error screen contains user-facing text in English that indicates the app failed to load required data and suggests trying again.",
-        "The error screen provides a “Retry” action that re-attempts loading the profile (via React Query refetch/invalidation).",
-        "The error screen provides a “Logout” action to allow the user to re-authenticate if the identity/session is in a bad state.",
-        "When the backend becomes reachable again, using “Retry” successfully proceeds into the app without requiring a full page reload."
+        "When opening the Draft/Preview URL, the user always sees either the React app or an HTML fallback screen; there is no fully blank/white screen state.",
+        "If the JS bundle fails to load or React fails to mount, the HTML fallback switches to an error state within the configured timeout and shows Reload and Hard Reload (Clear Cache) actions.",
+        "Hard Reload from the HTML fallback attempts to unregister service workers and clear Cache Storage, then reloads the page."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/StartupErrorScreen.tsx",
-          "operation": "create",
-          "description": "Create a dedicated startup error screen component that displays an English error message for failed profile load, and includes actions for “Retry” (calls provided callback) and “Logout” (calls provided callback). Use existing shadcn-ui components (e.g., Card/Alert/Button) without modifying anything under `frontend/src/components/ui`. Verify the component's usage instructions before implementing."
+          "path": "frontend/index.html",
+          "operation": "modify",
+          "description": "Implement a pre-React HTML fallback UI (inline markup + minimal styling) that is visible immediately, starts in a \"Starting…\" state, and transitions to an \"App failed to start\" error state after a 5–10s timeout if the React app hasn’t mounted. Include two plain-HTML actions: (1) Reload (standard location reload) and (2) Hard Reload that best-effort unregisters service workers and clears Cache Storage before reloading."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Update the startup/auth gate in RootComponent to handle `useGetCallerUserProfile()` failures and non-fetched/actor-unavailable states without showing an indefinite spinner. Render the new StartupErrorScreen when the profile query is in an error state (and for best-effort actor-not-available startup failure), and wire up: Retry to React Query refetch/invalidation of `['currentUserProfile']`, and Logout to `useInternetIdentity().clear()` plus `queryClient.clear()` so the user can re-authenticate. Verify the component's usage instructions before implementing."
+          "description": "Signal successful React bootstrap as early as possible (e.g., dispatch a global browser event or set a global flag from a top-level effect) so the index.html fallback can hide/remove itself immediately after React mounts, ensuring no visual interference once the app is running."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Provide a “Hard reload” recovery action in the startup error UI that clears relevant caches (including service worker caches) and reloads safely.",
+      "summary": "Add non-React startup diagnostics (console + HTML hint) for errors occurring before React mounts, ensuring all user-visible text is English.",
       "acceptanceCriteria": [
-        "The startup error UI includes a “Hard reload” action.",
-        "“Hard reload” clears Cache Storage entries created by the app (best-effort) and then reloads the page.",
-        "If a service worker is registered, the hard reload flow attempts to unregister it (best-effort) before reloading.",
-        "The hard reload flow does not throw uncaught exceptions if any operation fails (e.g., permissions, unsupported APIs)."
+        "If an error occurs before React mounts, it is logged to the browser console and the HTML fallback shows a short English message indicating startup failed (without exposing sensitive data).",
+        "If no error occurs and React mounts successfully, the HTML fallback is removed/hidden and does not visually interfere with the app."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/hardReload.ts",
-          "operation": "create",
-          "description": "Implement a safe, best-effort `hardReload()` helper that (1) attempts to delete app Cache Storage entries (e.g., caches with app-specific names/prefix), (2) attempts to unregister any registered service workers, and (3) reloads the page. Ensure all operations are guarded with feature detection and try/catch so failures never throw uncaught exceptions."
-        },
-        {
-          "path": "frontend/src/components/StartupErrorScreen.tsx",
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Add a “Hard reload” action/button to the startup error UI and wire it to call the `hardReload()` helper. Verify the component's usage instructions before implementing."
-        },
+          "description": "Add early startup diagnostic hooks that work without React: log critical bootstrap failures via window.onerror and unhandledrejection to the console, and update the HTML fallback with a short, generic English hint when such errors occur (avoid exposing stack traces or sensitive details in the UI, but keep details in console). Ensure the fallback is hidden/removed when the React-mounted signal is received."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Invalidate service worker caches by bumping CACHE_NAME and ensure the fetch handler never returns cached index.html for non-navigation requests (scripts/styles/assets/modules).",
+      "acceptanceCriteria": [
+        "Service worker CACHE_NAME is updated to a new version string (e.g., vision-galaxy-v3).",
+        "JS/CSS/module/image requests are never fulfilled by cached index.html; only true navigation/document requests may fall back to cached index.html.",
+        "After a hard reload, the client installs/activates the new service worker cache version and the Draft/Preview page loads without a blank screen."
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/public/sw.js",
           "operation": "modify",
-          "description": "Ensure the startup error state rendered from the auth gate includes the “Hard reload” action (via StartupErrorScreen) as a client-side recovery option for PWA/service worker cache or bad client state scenarios. Verify the component's usage instructions before implementing."
+          "description": "Bump CACHE_NAME to a new version and tighten fetch handling so that only true navigation/document requests may fall back to cached index.html. Add explicit guards to prevent any script/style/module/image/font (non-navigation) requests from being served cached index.html, even if a cache match exists."
         }
       ]
     }

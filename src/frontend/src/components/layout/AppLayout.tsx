@@ -20,7 +20,7 @@ import {
   X,
   Download
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { toast } from 'sonner';
 
@@ -36,8 +36,29 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { data: notifications = [] } = useGetCallerNotifications();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isInstallable, promptInstall } = usePwaInstall();
+  const [logoSrc, setLogoSrc] = useState('/assets/generated/vision-galaxy-logo.dim_512x512.png');
+  const [logoError, setLogoError] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  // Load custom logo from localStorage
+  useEffect(() => {
+    const customLogo = localStorage.getItem('customLogo');
+    if (customLogo) {
+      setLogoSrc(customLogo);
+      setLogoError(false);
+    } else {
+      setLogoSrc('/assets/generated/vision-galaxy-logo.dim_512x512.png');
+      setLogoError(false);
+    }
+  }, []);
+
+  const handleLogoError = () => {
+    if (!logoError) {
+      setLogoError(true);
+      setLogoSrc('/assets/generated/vision-galaxy-logo.dim_512x512.png');
+    }
+  };
 
   const handleLogout = async () => {
     await clear();
@@ -87,9 +108,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <img 
-              src="/assets/generated/vision-galaxy-logo.dim_512x512.png" 
+              src={logoSrc}
               alt="Vision Galaxy Society" 
-              className="h-10 w-10"
+              className="h-10 w-10 object-contain"
+              onError={handleLogoError}
             />
             <div>
               <h1 className="text-lg font-bold">Vision Galaxy Society</h1>

@@ -33,6 +33,12 @@ export interface Notice {
     expiryDate?: Time;
     message: string;
 }
+export interface FlatPaymentStatus {
+    paymentTimestamp?: Time;
+    isPaid: boolean;
+    upiRef?: string;
+    flatNumber: bigint;
+}
 export interface Complaint {
     id: bigint;
     status: string;
@@ -48,6 +54,11 @@ export interface Expenditure {
     totalAmount: bigint;
     notes?: string;
     items: Array<[string, bigint]>;
+}
+export interface SecretarySettings {
+    guardMobileNumber: string;
+    upiId: string;
+    maintenanceAmount: bigint;
 }
 export interface UserProfile {
     userType: string;
@@ -89,8 +100,11 @@ export interface backendInterface {
     getComplaintsByFlat(flatNumber: bigint): Promise<Array<Complaint>>;
     getExpenditures(month: string, year: bigint): Promise<Expenditure | null>;
     getFlatMobileNumbers(flatNumber: bigint): Promise<Array<string>>;
+    getMaintenanceAmount(): Promise<bigint>;
     getMaintenanceRecord(flatNumber: bigint, month: string, year: bigint): Promise<MaintenanceRecord | null>;
+    getMaintenanceStatusForAllFlats(month: string, year: bigint): Promise<Array<FlatPaymentStatus>>;
     getOverdueFlats(month: string, year: bigint): Promise<Array<bigint>>;
+    getSecretarySettings(): Promise<SecretarySettings>;
     getUpiId(): Promise<string>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getVisitorRequestsByFlat(flatNumber: bigint): Promise<Array<VisitorRequest>>;
@@ -112,5 +126,6 @@ export interface backendInterface {
     setWhatsappNumber(newNumber: string): Promise<void>;
     updateComplaintStatus(complaintId: bigint, newStatus: string, resolutionNote: string | null): Promise<void>;
     updateFlatMobileNumbers(flatNumber: bigint, numbers: Array<string>): Promise<void>;
+    updateSecretarySettings(newSettings: SecretarySettings): Promise<void>;
     updateVisitorRequestStatus(requestId: bigint, newStatus: string): Promise<void>;
 }

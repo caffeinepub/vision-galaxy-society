@@ -2,11 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-app-startup-auth-gate-to-handle-failures-when-loading-the-caller-user-profile-so-the-ui-never-gets-stuck-on-an-indefinite-loading-screen-specifically-when-usegetcalleruserprofile-returns-an-error-e-g-backend-unreachable-actor-not-available-render-a-clear-error-state-with-recovery-actions-instead-of-showing-the-setting-up-your-profile-spinner",
-      "featureTitle": "Update the app startup/auth gate to handle failures when loading the caller user profile so the UI never gets stuck on an indefinite loading screen. Specifically, when `useGetCallerUserProfile()` returns an error (e.g., backend unreachable / actor not available), render a clear error state with recovery actions instead of showing the “Setting up your profile...” spinner.",
+      "featureId": "feature-ensure-the-app-never-renders-as-a-fully-blank-page-in-draft-preview-by-adding-an-html-level-startup-fallback-ui-in-frontend-index-html-that-is-visible-before-react-mounts-and-that-automatically-switches-to-an-error-state-if-the-js-app-does-not-bootstrap-within-a-short-timeout-e-g-5-10-seconds-the-fallback-must-include-a-plain-html-message-a-standard-reload-action-and-a-hard-reload-action-that-clears-service-worker-caches-best-effort-and-then-reloads",
+      "featureTitle": "Ensure the app never renders as a fully blank page in Draft/Preview by adding an HTML-level startup fallback UI in frontend/index.html that is visible before React mounts and that automatically switches to an error state if the JS app does not bootstrap within a short timeout (e.g., 5–10 seconds). The fallback must include a plain HTML message, a standard reload action, and a hard-reload action that clears service worker + caches (best-effort) and then reloads.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/StartupErrorScreen.tsx"
+        "frontend/index.html",
+        "frontend/src/App.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,12 +23,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-safe-client-side-recovery-path-for-cases-where-the-pwa-service-worker-cache-or-a-bad-client-state-prevents-the-app-from-opening-by-providing-a-hard-reload-action-in-the-startup-error-ui-that-clears-relevant-browser-caches-including-service-worker-caches-if-present-and-reloads-the-page",
-      "featureTitle": "Add a safe client-side recovery path for cases where the PWA/service worker cache or a bad client state prevents the app from opening, by providing a “Hard reload” action in the startup error UI that clears relevant browser caches (including service worker caches if present) and reloads the page.",
+      "featureId": "feature-add-additional-startup-diagnostics-to-help-identify-why-draft-is-blank-by-logging-critical-bootstrap-failures-in-a-way-that-can-be-seen-without-react-e-g-console-logging-from-index-html-plus-rendering-a-short-human-readable-error-hint-in-the-html-fallback-when-a-script-error-unhandled-rejection-occurs-before-react-mounts-all-user-facing-text-must-be-english",
+      "featureTitle": "Add additional startup diagnostics to help identify why Draft is blank by logging critical bootstrap failures in a way that can be seen without React (e.g., console logging from index.html, plus rendering a short human-readable error hint in the HTML fallback when a script error/unhandled rejection occurs before React mounts). All user-facing text must be English.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/StartupErrorScreen.tsx",
-        "frontend/src/utils/hardReload.ts"
+        "frontend/index.html"
       ],
       "components": [
         "authorization@4.0.0",
@@ -41,6 +39,26 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-force-service-worker-cache-invalidation-again-to-eliminate-stale-behavior-affecting-draft-preview-by-bumping-the-cache-version-in-frontend-public-sw-js-and-confirming-the-fetch-handler-never-returns-cached-index-html-for-non-navigation-requests-scripts-styles-assets-modules",
+      "featureTitle": "Force service worker cache invalidation again to eliminate stale behavior affecting Draft/Preview by bumping the cache version in frontend/public/sw.js and confirming the fetch handler never returns cached index.html for non-navigation requests (scripts/styles/assets/modules).",
+      "files": [
+        "frontend/public/sw.js"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

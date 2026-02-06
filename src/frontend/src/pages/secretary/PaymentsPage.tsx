@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGetAllMaintenanceRecords } from '../../hooks/useQueries';
+import { useGetMaintenanceStatusForAllFlats } from '../../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,16 +23,16 @@ export default function PaymentsPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
-  const { data: records = [], isLoading, error } = useGetAllMaintenanceRecords(selectedMonth, BigInt(selectedYear));
+  const { data: flatStatuses = [], isLoading, error } = useGetMaintenanceStatusForAllFlats(selectedMonth, BigInt(selectedYear));
 
   const handleExportCSV = () => {
-    const csvData = records.map(record => ({
-      'Flat Number': record.flatNumber.toString(),
-      'Month': record.month,
-      'Year': record.year.toString(),
-      'Status': record.isPaid ? 'Paid' : 'Unpaid',
-      'UPI Reference': record.upiRef || 'N/A',
-      'Payment Date': record.paymentTimestamp ? formatDate(record.paymentTimestamp) : 'N/A',
+    const csvData = flatStatuses.map(status => ({
+      'Flat Number': status.flatNumber.toString(),
+      'Month': selectedMonth,
+      'Year': selectedYear.toString(),
+      'Status': status.isPaid ? 'Paid' : 'Unpaid',
+      'UPI Reference': status.upiRef || 'N/A',
+      'Payment Date': status.paymentTimestamp ? formatDate(status.paymentTimestamp) : 'N/A',
     }));
 
     const csv = generateCSV(csvData, ['Flat Number', 'Month', 'Year', 'Status', 'UPI Reference', 'Payment Date']);
@@ -43,8 +43,8 @@ export default function PaymentsPage() {
     openPrintView(`/reports/payments/print?month=${selectedMonth}&year=${selectedYear}`);
   };
 
-  const paidCount = records.filter(r => r.isPaid).length;
-  const unpaidCount = records.filter(r => !r.isPaid).length;
+  const paidCount = flatStatuses.filter(s => s.isPaid).length;
+  const unpaidCount = flatStatuses.filter(s => !s.isPaid).length;
 
   return (
     <div className="space-y-6">
@@ -83,11 +83,11 @@ export default function PaymentsPage() {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleExportCSV} variant="outline" disabled={isLoading || records.length === 0}>
+          <Button onClick={handleExportCSV} variant="outline" disabled={isLoading || flatStatuses.length === 0}>
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
-          <Button onClick={handlePrint} variant="outline" disabled={isLoading || records.length === 0}>
+          <Button onClick={handlePrint} variant="outline" disabled={isLoading || flatStatuses.length === 0}>
             <Printer className="h-4 w-4 mr-2" />
             Print
           </Button>
@@ -108,7 +108,7 @@ export default function PaymentsPage() {
             <CardTitle className="text-sm font-medium">Total Flats</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{records.length}</div>
+            <div className="text-2xl font-bold">{flatStatuses.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -141,9 +141,9 @@ export default function PaymentsPage() {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : records.length === 0 ? (
+          ) : flatStatuses.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <p>No payment records found for {selectedMonth} {selectedYear}</p>
+              <p>No flats found for {selectedMonth} {selectedYear}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -157,19 +157,19 @@ export default function PaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {records.map((record, idx) => (
+                  {flatStatuses.map((status, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">Flat {record.flatNumber.toString()}</TableCell>
+                      <TableCell className="font-medium">Flat {status.flatNumber.toString()}</TableCell>
                       <TableCell>
-                        <Badge variant={record.isPaid ? 'default' : 'destructive'}>
-                          {record.isPaid ? 'Paid' : 'Unpaid'}
+                        <Badge variant={status.isPaid ? 'default' : 'destructive'}>
+                          {status.isPaid ? 'Paid' : 'Unpaid'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {record.upiRef || 'N/A'}
+                        {status.upiRef || 'N/A'}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {record.paymentTimestamp ? formatDate(record.paymentTimestamp) : 'N/A'}
+                        {status.paymentTimestamp ? formatDate(status.paymentTimestamp) : 'N/A'}
                       </TableCell>
                     </TableRow>
                   ))}

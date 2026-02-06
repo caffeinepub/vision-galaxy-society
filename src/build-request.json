@@ -1,68 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Fix app startup hang when user profile query fails (show error + recovery options)",
+  "title": "Fix draft preview blank screen and add non-JS fallback diagnostics",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the app startup/auth gate to handle failures when loading the caller user profile so the UI never gets stuck on an indefinite loading screen. Specifically, when `useGetCallerUserProfile()` returns an error (e.g., backend unreachable / actor not available), render a clear error state with recovery actions instead of showing the “Setting up your profile...” spinner.",
+      "text": "Ensure the app never renders as a fully blank page in Draft/Preview by adding an HTML-level startup fallback UI in frontend/index.html that is visible before React mounts and that automatically switches to an error state if the JS app does not bootstrap within a short timeout (e.g., 5–10 seconds). The fallback must include a plain HTML message, a standard reload action, and a hard-reload action that clears service worker + caches (best-effort) and then reloads.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-9"
+          "msg-5"
         ],
         "quotes": [
-          "It's not opening"
+          "In draft it is now also showing blank"
         ]
       },
       "acceptanceCriteria": [
-        "If `getCallerUserProfile` fails (network error, canister error, or actor not available), the app shows an error screen instead of an infinite loading state.",
-        "The error screen contains user-facing text in English that indicates the app failed to load required data and suggests trying again.",
-        "The error screen provides a “Retry” action that re-attempts loading the profile (via React Query refetch/invalidation).",
-        "The error screen provides a “Logout” action to allow the user to re-authenticate if the identity/session is in a bad state.",
-        "When the backend becomes reachable again, using “Retry” successfully proceeds into the app without requiring a full page reload."
+        "When opening the Draft/Preview URL, the user always sees either the React app or an HTML fallback screen; there is no fully blank/white screen state.",
+        "If the JS bundle fails to load or React fails to mount, the HTML fallback switches to an error state within the configured timeout and shows Reload and Hard Reload (Clear Cache) actions.",
+        "Hard Reload from the HTML fallback attempts to unregister service workers and clear Cache Storage, then reloads the page."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add a safe client-side recovery path for cases where the PWA/service worker cache or a bad client state prevents the app from opening, by providing a “Hard reload” action in the startup error UI that clears relevant browser caches (including service worker caches if present) and reloads the page.",
+      "text": "Add additional startup diagnostics to help identify why Draft is blank by logging critical bootstrap failures in a way that can be seen without React (e.g., console logging from index.html, plus rendering a short human-readable error hint in the HTML fallback when a script error/unhandled rejection occurs before React mounts). All user-facing text must be English.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-9"
+          "msg-5"
         ],
         "quotes": [
-          "It's not opening"
+          "In draft it is now also showing blank"
         ]
       },
       "acceptanceCriteria": [
-        "The startup error UI includes a “Hard reload” action.",
-        "“Hard reload” clears Cache Storage entries created by the app (best-effort) and then reloads the page.",
-        "If a service worker is registered, the hard reload flow attempts to unregister it (best-effort) before reloading.",
-        "The hard reload flow does not throw uncaught exceptions if any operation fails (e.g., permissions, unsupported APIs)."
+        "If an error occurs before React mounts, it is logged to the browser console and the HTML fallback shows a short English message indicating startup failed (without exposing sensitive data).",
+        "If no error occurs and React mounts successfully, the HTML fallback is removed/hidden and does not visually interfere with the app."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Force service worker cache invalidation again to eliminate stale behavior affecting Draft/Preview by bumping the cache version in frontend/public/sw.js and confirming the fetch handler never returns cached index.html for non-navigation requests (scripts/styles/assets/modules).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "In draft it is now also showing blank"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Service worker CACHE_NAME is updated to a new version string (e.g., vision-galaxy-v3).",
+        "JS/CSS/module/image requests are never fulfilled by cached index.html; only true navigation/document requests may fall back to cached index.html.",
+        "After a hard reload, the client installs/activates the new service worker cache version and the Draft/Preview page loads without a blank screen."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under `frontend/src/components/ui` (read-only shadcn components).",
-    "Do not edit immutable hook files: `frontend/src/hooks/useInternetIdentity.ts(x)` and `frontend/src/hooks/useActor.ts`. Implement startup error handling in app-level components instead."
+    "Do not modify files under frontend/src/components/ui (read-only Shadcn components).",
+    "Do not edit immutable hook/bootstrap files: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
+    "Keep the backend as a single Motoko actor; no additional backend services."
   ],
   "nonGoals": [
-    "Adding new features unrelated to app startup reliability.",
-    "Changing backend schemas or business logic for flat numbering as part of this request."
+    "Adding new product features unrelated to fixing the blank screen issue.",
+    "Introducing third-party monitoring/analytics services or external logging backends."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

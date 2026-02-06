@@ -1,31 +1,61 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T09:09:42.490Z",
-  "summary": "The diff adds a dedicated startup error screen with Retry/Logout/Hard Reload actions, wires it into the app’s startup/auth gate when the caller profile query errors, and implements a best-effort hard reload utility that clears Cache Storage and unregisters service workers before reloading. No evidence suggests modifications to the read-only shadcn UI components or immutable hook files.",
+  "generatedAt": "2026-02-06T13:00:51.230Z",
+  "summary": "REQ-1/REQ-2/REQ-3 appear to be implemented via an HTML startup fallback in frontend/index.html, a React-mounted signal in App.tsx to hide the fallback, and a service worker cache version bump plus stricter fetch handling in frontend/public/sw.js. However, the diff also includes several unrelated feature/behavior changes (visitor request flows, profile setup, notifications, docs, logo behavior) not requested by the BuildRequest.",
   "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Project metadata/state tracking updates unrelated to runtime startup error handling (e.g., new/updated project_state.json feature request entries marked pending).",
-      "reason": "BuildRequest focuses on frontend startup reliability UI/actions; it does not request adding or updating repository-level project state tracking files.",
+      "description": "Visitor request feature work across guard/flat pages (create/detail/approve-decline flows, flat-number validation, WhatsApp deep link generation).",
+      "reason": "BuildRequest scope is limited to fixing blank Draft/Preview screen, adding HTML-level startup fallback diagnostics, and service worker cache invalidation behavior; visitor request UX/logic changes are unrelated and explicitly disallowed as new product features unrelated to the blank screen issue.",
       "evidence": [
-        "project_state.json"
+        "frontend-file-summaries.txt",
+        "frontend/src/pages/guard/VisitorRequestsPage.tsx",
+        "frontend/src/pages/guard/VisitorRequestCreatePage.tsx",
+        "frontend/src/pages/guard/VisitorRequestDetailPage.tsx",
+        "frontend/src/pages/flat/VisitorRequestsPage.tsx"
       ]
     },
     {
-      "description": "Repository-wide 'frontend-file-summaries.txt' update describing many unrelated pages/features.",
-      "reason": "The BuildRequest does not request updating documentation/summary inventory files; changes appear ancillary to the requested startup error handling.",
+      "description": "Profile setup modal changes (role selection, flat number dropdown scheme 101-523, additional validation).",
+      "reason": "Not requested by REQ-1/2/3 and appears to be unrelated product behavior change.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt",
+        "frontend/src/components/ProfileSetupModal.tsx"
+      ]
+    },
+    {
+      "description": "Notifications page behavior additions (unread/read separation, mark-as-read actions, formatting, empty states).",
+      "reason": "Not requested by REQ-1/2/3; constitutes additional feature work beyond fixing blank screen and adding startup diagnostics.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "frontend/src/pages/common/NotificationsPage.tsx"
+      ]
+    },
+    {
+      "description": "App layout/logo loading hardening and localStorage-driven custom logo updates.",
+      "reason": "Not requested by REQ-1/2/3; unrelated UI behavior change beyond the blank screen + diagnostics requirements.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "frontend/src/components/layout/AppLayout.tsx"
+      ]
+    },
+    {
+      "description": "Added/updated mobile/PWA/deploy documentation and manifest changes for IC hosting compatibility.",
+      "reason": "Documentation/manifest changes were not requested by REQ-1/2/3; may be helpful but are out of stated scope.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "frontend/public/manifest.webmanifest",
+        "frontend/README.mobile-and-deploy.md"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.74,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/index.html",
+    "frontend/public/sw.js",
     "frontend/src/App.tsx",
-    "frontend/src/components/StartupErrorScreen.tsx",
-    "frontend/src/utils/hardReload.ts",
     "project_state.json"
   ]
 }

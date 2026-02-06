@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,15 @@ import { AlertCircle } from 'lucide-react';
 export default function LoginPage() {
   const { login, loginStatus, clear } = useInternetIdentity();
   const [error, setError] = useState<string>('');
+  const [logoSrc, setLogoSrc] = useState('./assets/generated/vision-galaxy-logo.dim_512x512.png');
+
+  // Load custom logo from localStorage
+  useEffect(() => {
+    const customLogo = localStorage.getItem('customLogo');
+    if (customLogo) {
+      setLogoSrc(customLogo);
+    }
+  }, []);
 
   const handleLogin = async () => {
     setError('');
@@ -26,15 +35,19 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
-      <div className="absolute inset-0 bg-[url('/assets/generated/vision-galaxy-bg.dim_1920x1080.png')] bg-cover bg-center opacity-5" />
+      <div className="absolute inset-0 bg-[url('./assets/generated/vision-galaxy-bg.dim_1920x1080.png')] bg-cover bg-center opacity-5" />
       
       <Card className="w-full max-w-md relative z-10 shadow-2xl">
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto w-24 h-24 mb-2">
             <img 
-              src="/assets/generated/vision-galaxy-logo.dim_512x512.png" 
+              src={logoSrc}
               alt="Vision Galaxy Society" 
               className="w-full h-full object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = './assets/generated/vision-galaxy-logo.dim_512x512.png';
+              }}
             />
           </div>
           <CardTitle className="text-3xl font-bold">Vision Galaxy Society</CardTitle>

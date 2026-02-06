@@ -65,6 +65,17 @@ export const Expenditure = IDL.Record({
   'notes' : IDL.Opt(IDL.Text),
   'items' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat)),
 });
+export const FlatPaymentStatus = IDL.Record({
+  'paymentTimestamp' : IDL.Opt(Time),
+  'isPaid' : IDL.Bool,
+  'upiRef' : IDL.Opt(IDL.Text),
+  'flatNumber' : IDL.Nat,
+});
+export const SecretarySettings = IDL.Record({
+  'guardMobileNumber' : IDL.Text,
+  'upiId' : IDL.Text,
+  'maintenanceAmount' : IDL.Nat,
+});
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
   'approved' : IDL.Null,
@@ -108,9 +119,15 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getFlatMobileNumbers' : IDL.Func([IDL.Nat], [IDL.Vec(IDL.Text)], ['query']),
+  'getMaintenanceAmount' : IDL.Func([], [IDL.Nat], ['query']),
   'getMaintenanceRecord' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Nat],
       [IDL.Opt(MaintenanceRecord)],
+      ['query'],
+    ),
+  'getMaintenanceStatusForAllFlats' : IDL.Func(
+      [IDL.Text, IDL.Nat],
+      [IDL.Vec(FlatPaymentStatus)],
       ['query'],
     ),
   'getOverdueFlats' : IDL.Func(
@@ -118,6 +135,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Nat)],
       ['query'],
     ),
+  'getSecretarySettings' : IDL.Func([], [SecretarySettings], ['query']),
   'getUpiId' : IDL.Func([], [IDL.Text], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -169,6 +187,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'updateFlatMobileNumbers' : IDL.Func([IDL.Nat, IDL.Vec(IDL.Text)], [], []),
+  'updateSecretarySettings' : IDL.Func([SecretarySettings], [], []),
   'updateVisitorRequestStatus' : IDL.Func([IDL.Nat, IDL.Text], [], []),
 });
 
@@ -232,6 +251,17 @@ export const idlFactory = ({ IDL }) => {
     'notes' : IDL.Opt(IDL.Text),
     'items' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat)),
   });
+  const FlatPaymentStatus = IDL.Record({
+    'paymentTimestamp' : IDL.Opt(Time),
+    'isPaid' : IDL.Bool,
+    'upiRef' : IDL.Opt(IDL.Text),
+    'flatNumber' : IDL.Nat,
+  });
+  const SecretarySettings = IDL.Record({
+    'guardMobileNumber' : IDL.Text,
+    'upiId' : IDL.Text,
+    'maintenanceAmount' : IDL.Nat,
+  });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
     'approved' : IDL.Null,
@@ -291,9 +321,15 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Text)],
         ['query'],
       ),
+    'getMaintenanceAmount' : IDL.Func([], [IDL.Nat], ['query']),
     'getMaintenanceRecord' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Nat],
         [IDL.Opt(MaintenanceRecord)],
+        ['query'],
+      ),
+    'getMaintenanceStatusForAllFlats' : IDL.Func(
+        [IDL.Text, IDL.Nat],
+        [IDL.Vec(FlatPaymentStatus)],
         ['query'],
       ),
     'getOverdueFlats' : IDL.Func(
@@ -301,6 +337,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Nat)],
         ['query'],
       ),
+    'getSecretarySettings' : IDL.Func([], [SecretarySettings], ['query']),
     'getUpiId' : IDL.Func([], [IDL.Text], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -352,6 +389,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateFlatMobileNumbers' : IDL.Func([IDL.Nat, IDL.Vec(IDL.Text)], [], []),
+    'updateSecretarySettings' : IDL.Func([SecretarySettings], [], []),
     'updateVisitorRequestStatus' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   });
 };

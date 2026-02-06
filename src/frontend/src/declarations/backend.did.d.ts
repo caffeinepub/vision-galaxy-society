@@ -29,6 +29,12 @@ export interface Expenditure {
   'notes' : [] | [string],
   'items' : Array<[string, bigint]>,
 }
+export interface FlatPaymentStatus {
+  'paymentTimestamp' : [] | [Time],
+  'isPaid' : boolean,
+  'upiRef' : [] | [string],
+  'flatNumber' : bigint,
+}
 export interface MaintenanceRecord {
   'paymentTimestamp' : [] | [Time],
   'month' : string,
@@ -49,6 +55,11 @@ export interface Notification {
   'isRead' : boolean,
   'message' : string,
   'timestamp' : Time,
+}
+export interface SecretarySettings {
+  'guardMobileNumber' : string,
+  'upiId' : string,
+  'maintenanceAmount' : bigint,
 }
 export type Time = bigint;
 export interface UserApprovalInfo {
@@ -98,11 +109,17 @@ export interface _SERVICE {
   'getComplaintsByFlat' : ActorMethod<[bigint], Array<Complaint>>,
   'getExpenditures' : ActorMethod<[string, bigint], [] | [Expenditure]>,
   'getFlatMobileNumbers' : ActorMethod<[bigint], Array<string>>,
+  'getMaintenanceAmount' : ActorMethod<[], bigint>,
   'getMaintenanceRecord' : ActorMethod<
     [bigint, string, bigint],
     [] | [MaintenanceRecord]
   >,
+  'getMaintenanceStatusForAllFlats' : ActorMethod<
+    [string, bigint],
+    Array<FlatPaymentStatus>
+  >,
   'getOverdueFlats' : ActorMethod<[string, bigint], Array<bigint>>,
+  'getSecretarySettings' : ActorMethod<[], SecretarySettings>,
   'getUpiId' : ActorMethod<[], string>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getVisitorRequestsByFlat' : ActorMethod<[bigint], Array<VisitorRequest>>,
@@ -136,6 +153,7 @@ export interface _SERVICE {
     undefined
   >,
   'updateFlatMobileNumbers' : ActorMethod<[bigint, Array<string>], undefined>,
+  'updateSecretarySettings' : ActorMethod<[SecretarySettings], undefined>,
   'updateVisitorRequestStatus' : ActorMethod<[bigint, string], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
