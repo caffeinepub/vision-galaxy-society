@@ -65,11 +65,25 @@ export const Expenditure = IDL.Record({
   'notes' : IDL.Opt(IDL.Text),
   'items' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat)),
 });
+export const ApprovalStatus = IDL.Variant({
+  'pending' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
+});
+export const UserApprovalInfo = IDL.Record({
+  'status' : ApprovalStatus,
+  'principal' : IDL.Principal,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'changePassword' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+  'checkAndNotifyOverdueMaintenance' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Nat],
+      [],
+      ['oneway'],
+    ),
   'createNotice' : IDL.Func([IDL.Text, IDL.Text, IDL.Opt(Time)], [IDL.Nat], []),
   'createVisitorRequest' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
@@ -118,6 +132,8 @@ export const idlService = IDL.Service({
   'getWhatsappNumber' : IDL.Func([], [IDL.Text], ['query']),
   'initializePassword' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
+  'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
   'lodgeComplaint' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
       [IDL.Nat],
@@ -142,7 +158,9 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'requestApproval' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
   'setUpiId' : IDL.Func([IDL.Text], [], []),
   'setWhatsappNumber' : IDL.Func([IDL.Text], [], []),
   'updateComplaintStatus' : IDL.Func(
@@ -214,11 +232,25 @@ export const idlFactory = ({ IDL }) => {
     'notes' : IDL.Opt(IDL.Text),
     'items' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat)),
   });
+  const ApprovalStatus = IDL.Variant({
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+  });
+  const UserApprovalInfo = IDL.Record({
+    'status' : ApprovalStatus,
+    'principal' : IDL.Principal,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'changePassword' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+    'checkAndNotifyOverdueMaintenance' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Nat],
+        [],
+        ['oneway'],
+      ),
     'createNotice' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Opt(Time)],
         [IDL.Nat],
@@ -283,6 +315,8 @@ export const idlFactory = ({ IDL }) => {
     'getWhatsappNumber' : IDL.Func([], [IDL.Text], ['query']),
     'initializePassword' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
+    'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
     'lodgeComplaint' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
         [IDL.Nat],
@@ -307,7 +341,9 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'requestApproval' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
     'setUpiId' : IDL.Func([IDL.Text], [], []),
     'setWhatsappNumber' : IDL.Func([IDL.Text], [], []),
     'updateComplaintStatus' : IDL.Func(

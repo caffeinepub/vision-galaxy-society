@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-03T15:43:03.881Z",
+  "generatedAt": "2026-02-06T09:09:42.493Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,31 +11,31 @@
     "implemented": 2,
     "items": [
       {
-        "id": "REQ-4",
-        "summary": "Update the IC mainnet deployment helper tooling to support an explicit retry mode for transient deployment failures (including the known \"CaLM permanent canister reservation failed\" case), so an operator can run one command that retries `dfx deploy --network ic` multiple times with configurable delay and clear console guidance.",
+        "id": "REQ-1",
+        "summary": "Update the app startup/auth gate to handle failures when loading the caller user profile so the UI never gets stuck on an indefinite loading screen. Specifically, when `useGetCallerUserProfile()` returns an error (e.g., backend unreachable / actor not available), render a clear error state with recovery actions instead of showing the “Setting up your profile...” spinner.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/deploy/ic-deploy-with-retry.sh",
-          "frontend/deploy/README.md"
+          "frontend/src/components/StartupErrorScreen.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/deploy/ic-deploy-with-retry.sh",
-          "frontend/deploy/README.md"
+          "frontend/src/components/StartupErrorScreen.tsx",
+          "frontend/src/App.tsx"
         ]
       },
       {
-        "id": "REQ-5",
-        "summary": "Add a pre-deployment cycles readiness check to the deployment helper flow so operators are guided to verify cycles/wallet availability before attempting IC mainnet deployment, with clear English-only instructions and commands to run when cycles are missing or not configured.",
+        "id": "REQ-2",
+        "summary": "Add a safe client-side recovery path for cases where the PWA/service worker cache or a bad client state prevents the app from opening, by providing a “Hard reload” action in the startup error UI that clears relevant browser caches (including service worker caches if present) and reloads the page.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/deploy/ic-deploy-with-retry.sh",
-          "frontend/deploy/README.md",
-          "frontend/docs/deployment-troubleshooting.md"
+          "frontend/src/utils/hardReload.ts",
+          "frontend/src/components/StartupErrorScreen.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/deploy/ic-deploy-with-retry.sh",
-          "frontend/deploy/README.md",
-          "frontend/docs/deployment-troubleshooting.md"
+          "frontend/src/utils/hardReload.ts",
+          "frontend/src/components/StartupErrorScreen.tsx",
+          "frontend/src/App.tsx"
         ]
       }
     ]
@@ -45,9 +45,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/deploy/README.md",
-    "frontend/deploy/ic-deploy-with-retry.sh",
-    "frontend/docs/deployment-troubleshooting.md",
+    "frontend/src/App.tsx",
+    "frontend/src/components/StartupErrorScreen.tsx",
+    "frontend/src/utils/hardReload.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

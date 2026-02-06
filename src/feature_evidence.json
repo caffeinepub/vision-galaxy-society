@@ -2,11 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-ic-mainnet-deployment-helper-tooling-to-support-an-explicit-retry-mode-for-transient-deployment-failures-including-the-known-calm-permanent-canister-reservation-failed-case-so-an-operator-can-run-one-command-that-retries-dfx-deploy-network-ic-multiple-times-with-configurable-delay-and-clear-console-guidance",
-      "featureTitle": "Update the IC mainnet deployment helper tooling to support an explicit retry mode for transient deployment failures (including the known \"CaLM permanent canister reservation failed\" case), so an operator can run one command that retries `dfx deploy --network ic` multiple times with configurable delay and clear console guidance.",
+      "featureId": "feature-update-the-app-startup-auth-gate-to-handle-failures-when-loading-the-caller-user-profile-so-the-ui-never-gets-stuck-on-an-indefinite-loading-screen-specifically-when-usegetcalleruserprofile-returns-an-error-e-g-backend-unreachable-actor-not-available-render-a-clear-error-state-with-recovery-actions-instead-of-showing-the-setting-up-your-profile-spinner",
+      "featureTitle": "Update the app startup/auth gate to handle failures when loading the caller user profile so the UI never gets stuck on an indefinite loading screen. Specifically, when `useGetCallerUserProfile()` returns an error (e.g., backend unreachable / actor not available), render a clear error state with recovery actions instead of showing the “Setting up your profile...” spinner.",
       "files": [
-        "frontend/deploy/README.md",
-        "frontend/deploy/ic-deploy-with-retry.sh"
+        "frontend/src/App.tsx",
+        "frontend/src/components/StartupErrorScreen.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -14,20 +14,21 @@
         "shadcn-ui@1.0.0",
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-pre-deployment-cycles-readiness-check-to-the-deployment-helper-flow-so-operators-are-guided-to-verify-cycles-wallet-availability-before-attempting-ic-mainnet-deployment-with-clear-english-only-instructions-and-commands-to-run-when-cycles-are-missing-or-not-configured",
-      "featureTitle": "Add a pre-deployment cycles readiness check to the deployment helper flow so operators are guided to verify cycles/wallet availability before attempting IC mainnet deployment, with clear English-only instructions and commands to run when cycles are missing or not configured.",
+      "featureId": "feature-add-a-safe-client-side-recovery-path-for-cases-where-the-pwa-service-worker-cache-or-a-bad-client-state-prevents-the-app-from-opening-by-providing-a-hard-reload-action-in-the-startup-error-ui-that-clears-relevant-browser-caches-including-service-worker-caches-if-present-and-reloads-the-page",
+      "featureTitle": "Add a safe client-side recovery path for cases where the PWA/service worker cache or a bad client state prevents the app from opening, by providing a “Hard reload” action in the startup error UI that clears relevant browser caches (including service worker caches if present) and reloads the page.",
       "files": [
-        "frontend/deploy/README.md",
-        "frontend/deploy/ic-deploy-with-retry.sh",
-        "frontend/docs/deployment-troubleshooting.md"
+        "frontend/src/App.tsx",
+        "frontend/src/components/StartupErrorScreen.tsx",
+        "frontend/src/utils/hardReload.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -35,10 +36,11 @@
         "shadcn-ui@1.0.0",
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
       ],
       "testIds": [
-        "REQ-5"
+        "REQ-2"
       ],
       "confidence": "high"
     }

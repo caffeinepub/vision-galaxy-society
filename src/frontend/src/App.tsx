@@ -1,7 +1,8 @@
 import { createRouter, RouterProvider, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useSaveCallerUserProfile } from './hooks/useQueries';
+import { useGetCallerUserProfile } from './hooks/useQueries';
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import LoginPage from './pages/LoginPage';
 import FlatDashboardPage from './pages/flat/FlatDashboardPage';
 import SecretaryDashboardPage from './pages/secretary/SecretaryDashboardPage';
@@ -31,12 +32,14 @@ import ExpendituresReportPrintPage from './pages/secretary/ExpendituresReportPri
 import NoticesReportPrintPage from './pages/secretary/NoticesReportPrintPage';
 import AppLayout from './components/layout/AppLayout';
 import ProfileSetupModal from './components/ProfileSetupModal';
+import StartupErrorScreen from './components/StartupErrorScreen';
 import { Toaster } from '@/components/ui/sonner';
 
 function RootComponent() {
-  const { identity, isInitializing } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const { identity, isInitializing, clear } = useInternetIdentity();
+  const { data: userProfile, isLoading: profileLoading, isFetched, isError, refetch } = useGetCallerUserProfile();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const queryClient = useQueryClient();
 
   const isAuthenticated = !!identity;
 
@@ -48,7 +51,20 @@ function RootComponent() {
     }
   }, [isAuthenticated, profileLoading, isFetched, userProfile]);
 
-  if (isInitializing || (isAuthenticated && profileLoading)) {
+  // Handle logout
+  const handleLogout = async () => {
+    await clear();
+    queryClient.clear();
+  };
+
+  // Handle retry
+  const handleRetry = () => {
+    queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+    refetch();
+  };
+
+  // Show loading during initialization
+  if (isInitializing) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
@@ -59,23 +75,36 @@ function RootComponent() {
     );
   }
 
+  // Show login page if not authenticated
   if (!isAuthenticated) {
     return <LoginPage />;
   }
 
-  if (showProfileSetup) {
-    return <ProfileSetupModal onComplete={() => setShowProfileSetup(false)} />;
+  // Show error screen if profile fetch failed
+  if (isError) {
+    return <StartupErrorScreen onRetry={handleRetry} onLogout={handleLogout} />;
   }
 
-  if (!userProfile) {
+  // Show loading while fetching profile
+  if (profileLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
-          <p className="text-muted-foreground">Setting up your profile...</p>
+          <p className="text-muted-foreground">Loading your profile...</p>
         </div>
       </div>
     );
+  }
+
+  // Show profile setup modal if profile doesn't exist
+  if (showProfileSetup) {
+    return <ProfileSetupModal onComplete={() => setShowProfileSetup(false)} />;
+  }
+
+  // Show error screen if profile is still null after fetch completed (shouldn't happen but safety check)
+  if (!userProfile) {
+    return <StartupErrorScreen onRetry={handleRetry} onLogout={handleLogout} />;
   }
 
   return (

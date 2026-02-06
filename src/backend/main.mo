@@ -1,5 +1,3 @@
-// No actual backend changes needed to support mainnet deployment retry/fallback logic! 
-// Motoko backend remains unchanged.
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
 import List "mo:core/List";
@@ -12,8 +10,7 @@ import Principal "mo:core/Principal";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
-
-// Use module to inject migration via "with"
+import UserApproval "user-approval/approval";
 
 actor {
   // Types for primary entities
@@ -78,6 +75,8 @@ actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
+  let approvalState = UserApproval.initState(accessControlState);
+
   let maintenanceRecords = Map.empty<Text, MaintenanceRecord>();
   let expenditures = Map.empty<Text, Expenditure>();
   let complaints = Map.empty<Nat, Complaint>();
@@ -107,7 +106,37 @@ actor {
     };
   };
 
-  // Helper function to check if caller is flat owner
+  /* ==================== Required Approval Functions ==================== */
+
+  public query ({ caller }) func isCallerApproved() : async Bool {
+    AccessControl.hasPermission(accessControlState, caller, #admin) or UserApproval.isApproved(approvalState, caller);
+  };
+
+  public shared ({ caller }) func requestApproval() : async () {
+    UserApproval.requestApproval(approvalState, caller);
+  };
+
+  public shared ({ caller }) func setApproval(user : Principal, status : UserApproval.ApprovalStatus) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    UserApproval.setApproval(approvalState, user, status);
+  };
+
+  public query ({ caller }) func listApprovals() : async [UserApproval.UserApprovalInfo] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    UserApproval.listApprovals(approvalState);
+  };
+
+  // ==================== Helper Functions ====================
+
+  func isValidFlatNumber(flatNumber : Nat) : Bool {
+    flatNumber >= 101 and flatNumber <= 523 and
+    flatNumber % 100 >= 1 and flatNumber % 100 <= 23
+  };
+
   func isCallerFlatOwner(caller : Principal, flatNumber : Nat) : Bool {
     switch (userProfiles.get(caller)) {
       case (?profile) {
@@ -124,7 +153,6 @@ actor {
     };
   };
 
-  // Helper to get all flat owners for notification purposes
   func getAllFlatOwnerPrincipals() : [Principal] {
     let flatOwners = List.empty<Principal>();
     for ((principal, profile) in userProfiles.entries()) {
@@ -135,7 +163,6 @@ actor {
     flatOwners.toArray();
   };
 
-  // Helper to get flat owner principal by flat number
   func getFlatOwnerPrincipal(flatNumber : Nat) : ?Principal {
     for ((principal, profile) in userProfiles.entries()) {
       if (profile.userType == "FlatOwner" and profile.flatNumber == ?flatNumber) {
@@ -145,7 +172,6 @@ actor {
     null;
   };
 
-  // Endpoints for notifications
   public query ({ caller }) func getCallerNotifications() : async [Notification] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view notifications");
@@ -200,7 +226,6 @@ actor {
     notificationIdCounter += 1;
   };
 
-  // Helper to notify all flat owners about new notices
   func notifyAllFlatOwnersAboutNotice(noticeTitle : Text) : () {
     let flatOwners = getAllFlatOwnerPrincipals();
     for (owner in flatOwners.vals()) {
@@ -208,8 +233,7 @@ actor {
     };
   };
 
-  // Helper to check if maintenance is overdue and notify
-  func checkAndNotifyOverdueMaintenance(flatNumber : Nat, month : Text, year : Nat) : () {
+  public func checkAndNotifyOverdueMaintenance(flatNumber : Nat, month : Text, year : Nat) : () {
     let key = flatNumber.toText() # "-" # month # "-" # year.toText();
     switch (maintenanceRecords.get(key)) {
       case (?record) {
@@ -248,6 +272,14 @@ actor {
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can save profiles");
+    };
+    switch (profile.flatNumber) {
+      case (?flatNumber) {
+        if (not isValidFlatNumber(flatNumber)) {
+          Runtime.trap("Invalid flat number: Must be within valid range (e.g., 101-523)");
+        };
+      };
+      case (null) {};
     };
     userProfiles.add(caller, profile);
   };
@@ -291,6 +323,9 @@ actor {
     if (not (isCallerFlatOwner(caller, flatNumber) or AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Can only view your own flat's mobile numbers");
     };
+    if (not isValidFlatNumber(flatNumber)) {
+      Runtime.trap("Invalid flat number: Must be within valid range (e.g., 101-523)");
+    };
     switch (flatMobileNumbers.get(flatNumber)) {
       case (?numbers) { numbers };
       case (null) { [] };
@@ -303,6 +338,9 @@ actor {
     };
     if (not (isCallerFlatOwner(caller, flatNumber))) {
       Runtime.trap("Unauthorized: Can only update your own flat's mobile numbers");
+    };
+    if (not isValidFlatNumber(flatNumber)) {
+      Runtime.trap("Invalid flat number: Must be within valid range (e.g., 101-523)");
     };
     flatMobileNumbers.add(flatNumber, numbers);
   };
@@ -321,6 +359,9 @@ actor {
     ) {
       Runtime.trap("Unauthorized: Can only view your own flat's maintenance records");
     };
+    if (not isValidFlatNumber(flatNumber)) {
+      Runtime.trap("Invalid flat number: Must be within valid range (e.g., 101-523)");
+    };
     let key = flatNumber.toText() # "-" # month # "-" # year.toText();
     maintenanceRecords.get(key);
   };
@@ -331,6 +372,9 @@ actor {
     };
     if (not (isCallerFlatOwner(caller, flatNumber))) {
       Runtime.trap("Unauthorized: Can only record payment for your own flat");
+    };
+    if (not isValidFlatNumber(flatNumber)) {
+      Runtime.trap("Invalid flat number: Must be within valid range (e.g., 101-523)");
     };
     let record : MaintenanceRecord = {
       flatNumber;
@@ -377,6 +421,9 @@ actor {
     };
     if (not (isCallerFlatOwner(caller, flatNumber))) {
       Runtime.trap("Unauthorized: Can only lodge complaint for your own flat");
+    };
+    if (not isValidFlatNumber(flatNumber)) {
+      Runtime.trap("Invalid flat number: Must be within valid range (e.g., 101-523)");
     };
     let complaint : Complaint = {
       id = complaintIdCounter;
@@ -443,10 +490,9 @@ actor {
     };
     notices.add(noticeIdCounter, newNotice);
     noticeIdCounter += 1;
-    
-    // Notify all flat owners about new notice
+
     notifyAllFlatOwnersAboutNotice(title);
-    
+
     noticeIdCounter - 1;
   };
 
@@ -475,6 +521,9 @@ actor {
     if (not (isCallerFlatOwner(caller, flatNumber) or isCallerGuard(caller))) {
       Runtime.trap("Unauthorized: Only flat owners or guards can create visitor requests");
     };
+    if (not isValidFlatNumber(flatNumber)) {
+      Runtime.trap("Invalid flat number: Must be within valid range (e.g., 101-523)");
+    };
     let request : VisitorRequest = {
       id = visitorRequestIdCounter;
       visitorName;
@@ -494,7 +543,6 @@ actor {
     };
     switch (visitorRequests.get(requestId)) {
       case (?request) {
-        // Guards can update any request, flat owners can only update their own
         if (not (isCallerGuard(caller) or isCallerFlatOwner(caller, request.flatNumber))) {
           Runtime.trap("Unauthorized: Can only update visitor requests for your own flat");
         };
@@ -502,16 +550,14 @@ actor {
           request with status = newStatus;
         };
         visitorRequests.add(requestId, updatedRequest);
-        
-        // Notify flat owner about status change
+
         switch (getFlatOwnerPrincipal(request.flatNumber)) {
           case (?owner) {
             createNotification(owner, "Visitor request status changed to: " # newStatus);
           };
           case (null) {};
         };
-        
-        // If caller is flat owner, also notify guards
+
         if (isCallerFlatOwner(caller, request.flatNumber)) {
           for ((principal, profile) in userProfiles.entries()) {
             if (profile.userType == "Guard") {
@@ -641,4 +687,3 @@ actor {
     expenditures.add(key, expenditure);
   };
 };
-

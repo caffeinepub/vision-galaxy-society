@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSaveCallerUserProfile } from '../hooks/useQueries';
+import { getValidFlatNumbers, isValidFlatNumber, formatFlatNumber } from '../utils/flatNumbers';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,8 @@ export default function ProfileSetupModal({ onComplete }: ProfileSetupModalProps
   const [flatNumber, setFlatNumber] = useState('');
   const saveProfileMutation = useSaveCallerUserProfile();
 
+  const validFlatNumbers = getValidFlatNumbers();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -31,9 +34,16 @@ export default function ProfileSetupModal({ onComplete }: ProfileSetupModalProps
       return;
     }
 
-    if (userType === 'FlatOwner' && !flatNumber) {
-      toast.error('Please enter your flat number');
-      return;
+    if (userType === 'FlatOwner') {
+      if (!flatNumber) {
+        toast.error('Please select your flat number');
+        return;
+      }
+      
+      if (!isValidFlatNumber(flatNumber)) {
+        toast.error('Invalid flat number. Please select a valid flat from the list.');
+        return;
+      }
     }
 
     const profile: UserProfile = {
@@ -90,14 +100,18 @@ export default function ProfileSetupModal({ onComplete }: ProfileSetupModalProps
           {userType === 'FlatOwner' && (
             <div className="space-y-2">
               <Label htmlFor="flatNumber">Flat Number</Label>
-              <Input
-                id="flatNumber"
-                type="number"
-                value={flatNumber}
-                onChange={(e) => setFlatNumber(e.target.value)}
-                placeholder="Enter your flat number"
-                required
-              />
+              <Select value={flatNumber} onValueChange={setFlatNumber} required>
+                <SelectTrigger id="flatNumber">
+                  <SelectValue placeholder="Select your flat number" />
+                </SelectTrigger>
+                <SelectContent>
+                  {validFlatNumbers.map(num => (
+                    <SelectItem key={num} value={num}>
+                      {formatFlatNumber(num)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 

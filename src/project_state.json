@@ -1,176 +1,32 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
-  "summary": "ICP (Internet Computer) full-stack application template for “Vision Galaxy Society” with a Motoko backend (RBAC) and React+Vite+Tailwind (shadcn/ui) frontend including Internet Identity authentication, multi-role dashboards/CRUD pages, build/deploy tooling and generated brand assets; now includes installable PWA mobile delivery plus an in-app notifications center, while push notifications/APK remain future work.",
+  "projectStateVersion": 3,
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Deployed app (Version 6) is not opening for the user."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "IF-1",
-      "title": "Motoko backend canister scaffold",
-      "synonyms": [
-        "backend canister",
-        "Motoko core"
-      ],
-      "description": "Backend canister project wired into build/deploy pipeline, with main entrypoint and supporting modules.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-2",
-      "title": "Role-based authorization & access control",
-      "synonyms": [
-        "authorization mixin",
-        "RBAC"
-      ],
-      "description": "Authorization modules added (MixinAuthorization, access-control) to enforce permissions and role-scoped actions.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-3",
-      "title": "Internet Identity authentication integration (frontend)",
-      "synonyms": [
-        "II login",
-        "auth"
-      ],
-      "description": "Frontend hooks and actor integration for Internet Identity login and authenticated canister calls.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-4",
-      "title": "React+Vite+Tailwind frontend scaffold with shadcn/ui component library",
-      "synonyms": [
-        "UI kit",
-        "shadcn"
-      ],
-      "description": "Frontend app scaffolded with Tailwind and a large set of shadcn/ui components and supporting configs (eslint, tsconfig, postcss, vite).",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-5",
-      "title": "Multi-role application pages and routing",
-      "synonyms": [
-        "pages"
-      ],
-      "description": "Implemented pages for resident/flat, guard, and secretary roles including dashboards and operational pages (notices, complaints, expenditures, visitors, payments, overdue, settings, profile).",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-6",
-      "title": "Build template and deployment tooling",
-      "synonyms": [
-        "Dockerfile",
-        "deploy.sh",
-        "icp.yaml"
-      ],
-      "description": "Added build-template workspace including Dockerfile, deployment scripts/config, pnpm workspace, and image processing scripts.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-7",
-      "title": "Generated brand assets",
-      "synonyms": [
-        "generated images",
-        "vision assets"
-      ],
-      "description": "Generated and included branded background and logo images under frontend/public/assets/generated.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-8",
-      "title": "Progressive Web App (PWA) support (installable)",
-      "synonyms": [
-        "web app manifest",
-        "service worker",
-        "Add to Home Screen"
-      ],
-      "description": "Frontend is now installable as a PWA via manifest.webmanifest and service worker integration, with a supporting install UX hook (usePwaInstall) for mobile-friendly delivery.",
+      "id": "feature-update-the-app-startup-auth-gate-to-handle-failures-when-loading-the-caller-user-profile-so-the-ui-never-gets-stuck-on-an-indefinite-loading-screen-specifically-when-usegetcalleruserprofile-returns-an-error-e-g-backend-unreachable-actor-not-available-render-a-clear-error-state-with-recovery-actions-instead-of-showing-the-setting-up-your-profile-spinner",
+      "title": "Update the app startup/auth gate to handle failures when loading the caller user profile so the UI never gets stuck on an indefinite loading screen. Specifically, when `useGetCallerUserProfile()` returns an error (e.g., backend unreachable / actor not available), render a clear error state with recovery actions instead of showing the “Setting up your profile...” spinner.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "IF-9",
-      "title": "In-app notifications center (non-push)",
-      "synonyms": [
-        "notifications page",
-        "activity feed"
-      ],
-      "description": "Added an in-app notifications experience surfaced via a dedicated Notifications page, covering key events such as overdue reminders, new notices, and visitor request status changes (non-push).",
+      "id": "feature-add-a-safe-client-side-recovery-path-for-cases-where-the-pwa-service-worker-cache-or-a-bad-client-state-prevents-the-app-from-opening-by-providing-a-hard-reload-action-in-the-startup-error-ui-that-clears-relevant-browser-caches-including-service-worker-caches-if-present-and-reloads-the-page",
+      "title": "Add a safe client-side recovery path for cases where the PWA/service worker cache or a bad client state prevents the app from opening, by providing a “Hard reload” action in the startup error UI that clears relevant browser caches (including service worker caches if present) and reloads the page.",
       "reqIds": [
         "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "IF-10",
-      "title": "End-to-end Internet Identity auth flow & gating",
-      "synonyms": [
-        "login/logout flow",
-        "auth gate",
-        "session handling"
-      ],
-      "description": "Completed end-to-end Internet Identity integration: login page triggers II, authenticated identity gates app routes, and logout clears identity/cached state without modifying immutable hook files.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-ic-mainnet-deployment-helper-tooling-to-support-an-explicit-retry-mode-for-transient-deployment-failures-including-the-known-calm-permanent-canister-reservation-failed-case-so-an-operator-can-run-one-command-that-retries-dfx-deploy-network-ic-multiple-times-with-configurable-delay-and-clear-console-guidance",
-      "title": "Update the IC mainnet deployment helper tooling to support an explicit retry mode for transient deployment failures (including the known \"CaLM permanent canister reservation failed\" case), so an operator can run one command that retries `dfx deploy --network ic` multiple times with configurable delay and clear console guidance.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-pre-deployment-cycles-readiness-check-to-the-deployment-helper-flow-so-operators-are-guided-to-verify-cycles-wallet-availability-before-attempting-ic-mainnet-deployment-with-clear-english-only-instructions-and-commands-to-run-when-cycles-are-missing-or-not-configured",
-      "title": "Add a pre-deployment cycles readiness check to the deployment helper flow so operators are guided to verify cycles/wallet availability before attempting IC mainnet deployment, with clear English-only instructions and commands to run when cycles are missing or not configured.",
-      "reqIds": [
-        "REQ-5"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [],
-  "architecturalNotes": [
-    "Project structured as an Internet Computer (ICP) full-stack app with a Motoko backend canister and a React (Vite) frontend.",
-    "Authentication uses Internet Identity on the frontend with an actor-based canister client.",
-    "Authorization enforced via backend access-control modules (role-based authorization).",
-    "Frontend uses TailwindCSS and shadcn/ui component set; repository includes a reusable build-template workspace and deployment scripts/config.",
-    "Add a mobile delivery strategy (e.g., PWA and/or Android APK wrapper) to enable access on phones.",
-    "Mobile delivery now supports an installable PWA via web manifest + service worker, with frontend install prompting/UX handled by a dedicated hook.",
-    "In-app (non-push) notifications are presented via a dedicated Notifications page/experience tied into the existing role-based UI."
-  ],
-  "knownIssues": [
-    "Mainnet (production) deployment failed with error: \"CaLM permanent canister reservation failed\".",
-    "Subsequent attempt to complete production deployment failed generically: \"Deployment failed\" (no additional error details provided)."
-  ],
-  "isFixRequest": true,
-  "generatedImages": [
-    {
-      "filename": "frontend/public/assets/generated/vision-galaxy-bg.dim_1920x1080.png",
-      "description": "Generated background image asset (dimmed).",
-      "targetWidth": 1920,
-      "targetHeight": 1080
-    },
-    {
-      "filename": "frontend/public/assets/generated/vision-galaxy-logo.dim_512x512.png",
-      "description": "Generated logo image asset (dimmed).",
-      "targetWidth": 512,
-      "targetHeight": 512
-    }
-  ],
-  "gameProjectType": "none",
-  "projectName": "Vision Galaxy Society",
+  "projectName": "Fix app startup hang when user profile query fails (show error + recovery options)",
   "clarification_mode": "instant",
-  "clarification_rounds": 0,
-  "requiresBackendChanges": false,
-  "requiresFrontendChanges": true
+  "clarification_rounds": 0
 }

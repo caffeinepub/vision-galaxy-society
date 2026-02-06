@@ -1,56 +1,68 @@
 {
   "kind": "build_request",
-  "title": "Enhance IC mainnet deployment tooling to support retries and cycles readiness checks",
-  "priority": "normal",
+  "title": "Fix app startup hang when user profile query fails (show error + recovery options)",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-4",
-      "text": "Update the IC mainnet deployment helper tooling to support an explicit retry mode for transient deployment failures (including the known \"CaLM permanent canister reservation failed\" case), so an operator can run one command that retries `dfx deploy --network ic` multiple times with configurable delay and clear console guidance.",
+      "id": "REQ-1",
+      "text": "Update the app startup/auth gate to handle failures when loading the caller user profile so the UI never gets stuck on an indefinite loading screen. Specifically, when `useGetCallerUserProfile()` returns an error (e.g., backend unreachable / actor not available), render a clear error state with recovery actions instead of showing the “Setting up your profile...” spinner.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-9"
         ],
         "quotes": [
-          "Try 2 and 3"
+          "It's not opening"
         ]
       },
       "acceptanceCriteria": [
-        "A retry-capable entrypoint exists in the repository (either by extending `frontend/deploy/ic-deploy-with-retry.sh` or adding a new script in `frontend/deploy/`) that re-attempts `dfx deploy --network ic` for a configurable number of tries and delay between tries.",
-        "When a deploy attempt fails due to \"CaLM permanent canister reservation failed\", the tooling prints the existing recommended next steps (including pre-creating canisters) and then continues according to the configured retry behavior.",
-        "When all retries are exhausted, the tooling exits non-zero and prints a concise summary indicating the last failure reason and where to find troubleshooting docs."
+        "If `getCallerUserProfile` fails (network error, canister error, or actor not available), the app shows an error screen instead of an infinite loading state.",
+        "The error screen contains user-facing text in English that indicates the app failed to load required data and suggests trying again.",
+        "The error screen provides a “Retry” action that re-attempts loading the profile (via React Query refetch/invalidation).",
+        "The error screen provides a “Logout” action to allow the user to re-authenticate if the identity/session is in a bad state.",
+        "When the backend becomes reachable again, using “Retry” successfully proceeds into the app without requiring a full page reload."
       ]
     },
     {
-      "id": "REQ-5",
-      "text": "Add a pre-deployment cycles readiness check to the deployment helper flow so operators are guided to verify cycles/wallet availability before attempting IC mainnet deployment, with clear English-only instructions and commands to run when cycles are missing or not configured.",
+      "id": "REQ-2",
+      "text": "Add a safe client-side recovery path for cases where the PWA/service worker cache or a bad client state prevents the app from opening, by providing a “Hard reload” action in the startup error UI that clears relevant browser caches (including service worker caches if present) and reloads the page.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-9"
         ],
         "quotes": [
-          "Try 2 and 3"
+          "It's not opening"
         ]
       },
       "acceptanceCriteria": [
-        "The deployment helper flow includes a cycles/wallet readiness check step (either automated or an explicit prompted step) before running `dfx deploy --network ic`.",
-        "If cycles/wallet readiness cannot be verified automatically, the tooling prints exact commands the operator can run to verify cycles/wallet configuration and balance, and then aborts safely with a non-zero exit code.",
-        "Documentation is updated to include an English-only section explaining the cycles readiness check and what to do if cycles are insufficient."
+        "The startup error UI includes a “Hard reload” action.",
+        "“Hard reload” clears Cache Storage entries created by the app (best-effort) and then reloads the page.",
+        "If a service worker is registered, the hard reload flow attempts to unregister it (best-effort) before reloading.",
+        "The hard reload flow does not throw uncaught exceptions if any operation fails (e.g., permissions, unsupported APIs)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, or `frontend/src/components/ui`.",
-    "Keep all Motoko backend logic in the single actor (`backend/main.mo`); do not introduce additional backend services."
+    "Do not modify files under `frontend/src/components/ui` (read-only shadcn components).",
+    "Do not edit immutable hook files: `frontend/src/hooks/useInternetIdentity.ts(x)` and `frontend/src/hooks/useActor.ts`. Implement startup error handling in app-level components instead."
   ],
   "nonGoals": [
-    "Guaranteeing mainnet deployment success in the presence of IC capacity issues outside the project’s control.",
-    "Changing application product features, UI/UX, or backend data models unrelated to deployment tooling.",
-    "Adding third-party deployment services or external CI/CD providers."
+    "Adding new features unrelated to app startup reliability.",
+    "Changing backend schemas or business logic for flat numbering as part of this request."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

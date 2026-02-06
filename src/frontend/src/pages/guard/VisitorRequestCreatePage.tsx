@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useCreateVisitorRequest, useGetFlatMobileNumbers } from '../../hooks/useQueries';
 import { buildWhatsappDeepLink } from '../../utils/whatsapp';
+import { getValidFlatNumbers, formatFlatNumber } from '../../utils/flatNumbers';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,8 @@ export default function VisitorRequestCreatePage() {
   const { data: mobileNumbers = [] } = useGetFlatMobileNumbers(
     flatNumber ? BigInt(flatNumber) : BigInt(0)
   );
+
+  const validFlatNumbers = getValidFlatNumbers();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,9 +107,9 @@ export default function VisitorRequestCreatePage() {
                   <SelectValue placeholder="Select flat number" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 115 }, (_, i) => i + 1).map(num => (
-                    <SelectItem key={num} value={num.toString()}>
-                      Flat {num}
+                  {validFlatNumbers.map(num => (
+                    <SelectItem key={num} value={num}>
+                      {formatFlatNumber(num)}
                     </SelectItem>
                   ))}
                 </SelectContent>

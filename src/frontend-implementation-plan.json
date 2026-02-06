@@ -1,52 +1,55 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "IC mainnet deployment helper retries and cycles readiness checks",
+  "title": "Startup auth gate: fail-fast error UI with retry, logout, and hard reload recovery",
   "requirements": [
     {
-      "id": "REQ-4",
-      "summary": "Add an explicit retry mode to the IC mainnet deployment helper so operators can re-attempt `dfx deploy --network ic` multiple times with configurable delay and clear console guidance, including continued retries after the known CaLM failure.",
+      "id": "REQ-1",
+      "summary": "Prevent app startup from hanging by rendering a clear startup error UI when loading the caller user profile fails, with Retry and Logout recovery actions.",
       "acceptanceCriteria": [
-        "A retry-capable entrypoint exists in the repository (either by extending `frontend/deploy/ic-deploy-with-retry.sh` or adding a new script in `frontend/deploy/`) that re-attempts `dfx deploy --network ic` for a configurable number of tries and delay between tries.",
-        "When a deploy attempt fails due to \"CaLM permanent canister reservation failed\", the tooling prints the existing recommended next steps (including pre-creating canisters) and then continues according to the configured retry behavior.",
-        "When all retries are exhausted, the tooling exits non-zero and prints a concise summary indicating the last failure reason and where to find troubleshooting docs."
+        "If `getCallerUserProfile` fails (network error, canister error, or actor not available), the app shows an error screen instead of an infinite loading state.",
+        "The error screen contains user-facing text in English that indicates the app failed to load required data and suggests trying again.",
+        "The error screen provides a “Retry” action that re-attempts loading the profile (via React Query refetch/invalidation).",
+        "The error screen provides a “Logout” action to allow the user to re-authenticate if the identity/session is in a bad state.",
+        "When the backend becomes reachable again, using “Retry” successfully proceeds into the app without requiring a full page reload."
       ],
       "file_operations": [
         {
-          "path": "frontend/deploy/ic-deploy-with-retry.sh",
-          "operation": "modify",
-          "description": "Extend the script to implement an explicit retry mode around `dfx deploy --network ic`, including: configurable number of tries and delay (via flags and/or environment variables), attempt counters and clear console messages, preservation of per-attempt failure output for diagnostics, CaLM failure detection that prints the existing recommended next steps (including running `./frontend/deploy/ic-precreate-canisters.sh`) and then continues retrying per configuration, and a final non-zero exit with a concise summary (last failure reason + reference to `frontend/docs/deployment-troubleshooting.md`)."
+          "path": "frontend/src/components/StartupErrorScreen.tsx",
+          "operation": "create",
+          "description": "Create a dedicated startup error screen component that displays an English error message for failed profile load, and includes actions for “Retry” (calls provided callback) and “Logout” (calls provided callback). Use existing shadcn-ui components (e.g., Card/Alert/Button) without modifying anything under `frontend/src/components/ui`. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/deploy/README.md",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Update documentation for the deployment helper to describe the new explicit retry mode: how to invoke it, how to configure tries/delay, what is printed on each attempt, what happens on CaLM reservation failures, and what summary is shown when retries are exhausted."
+          "description": "Update the startup/auth gate in RootComponent to handle `useGetCallerUserProfile()` failures and non-fetched/actor-unavailable states without showing an indefinite spinner. Render the new StartupErrorScreen when the profile query is in an error state (and for best-effort actor-not-available startup failure), and wire up: Retry to React Query refetch/invalidation of `['currentUserProfile']`, and Logout to `useInternetIdentity().clear()` plus `queryClient.clear()` so the user can re-authenticate. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-5",
-      "summary": "Add a pre-deployment cycles/wallet readiness check to the IC mainnet deployment helper flow, with English-only instructions and exact commands to run when readiness cannot be verified or cycles are missing.",
+      "id": "REQ-2",
+      "summary": "Provide a “Hard reload” recovery action in the startup error UI that clears relevant caches (including service worker caches) and reloads safely.",
       "acceptanceCriteria": [
-        "The deployment helper flow includes a cycles/wallet readiness check step (either automated or an explicit prompted step) before running `dfx deploy --network ic`.",
-        "If cycles/wallet readiness cannot be verified automatically, the tooling prints exact commands the operator can run to verify cycles/wallet configuration and balance, and then aborts safely with a non-zero exit code.",
-        "Documentation is updated to include an English-only section explaining the cycles readiness check and what to do if cycles are insufficient."
+        "The startup error UI includes a “Hard reload” action.",
+        "“Hard reload” clears Cache Storage entries created by the app (best-effort) and then reloads the page.",
+        "If a service worker is registered, the hard reload flow attempts to unregister it (best-effort) before reloading.",
+        "The hard reload flow does not throw uncaught exceptions if any operation fails (e.g., permissions, unsupported APIs)."
       ],
       "file_operations": [
         {
-          "path": "frontend/deploy/ic-deploy-with-retry.sh",
-          "operation": "modify",
-          "description": "Add a pre-deployment cycles/wallet readiness check step executed before the first deploy attempt. Prefer an automated check using `dfx` commands to detect whether an IC wallet is configured and whether a balance can be read; if the check cannot be verified automatically, print English-only, exact commands the operator should run to verify wallet configuration and cycles balance (for IC mainnet), then abort safely with a non-zero exit code without attempting deployment."
+          "path": "frontend/src/utils/hardReload.ts",
+          "operation": "create",
+          "description": "Implement a safe, best-effort `hardReload()` helper that (1) attempts to delete app Cache Storage entries (e.g., caches with app-specific names/prefix), (2) attempts to unregister any registered service workers, and (3) reloads the page. Ensure all operations are guarded with feature detection and try/catch so failures never throw uncaught exceptions."
         },
         {
-          "path": "frontend/deploy/README.md",
+          "path": "frontend/src/components/StartupErrorScreen.tsx",
           "operation": "modify",
-          "description": "Add an English-only section documenting the cycles/wallet readiness check: what it verifies, what the helper does when verification fails, and the exact commands operators should run to confirm wallet configuration and cycles balance before retrying deployment."
+          "description": "Add a “Hard reload” action/button to the startup error UI and wire it to call the `hardReload()` helper. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/docs/deployment-troubleshooting.md",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Update the troubleshooting guide with an English-only section describing the new cycles readiness check step, including what to do when cycles are missing/insufficient or a wallet is not configured, and include the exact `dfx` commands referenced by the deployment helper."
+          "description": "Ensure the startup error state rendered from the auth gate includes the “Hard reload” action (via StartupErrorScreen) as a client-side recovery option for PWA/service worker cache or bad client state scenarios. Verify the component's usage instructions before implementing."
         }
       ]
     }

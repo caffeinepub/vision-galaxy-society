@@ -7,6 +7,10 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface UserApprovalInfo {
+    status: ApprovalStatus;
+    principal: Principal;
+}
 export type Time = bigint;
 export interface Notification {
     id: bigint;
@@ -59,6 +63,11 @@ export interface VisitorRequest {
     purpose: string;
     flatNumber: bigint;
 }
+export enum ApprovalStatus {
+    pending = "pending",
+    approved = "approved",
+    rejected = "rejected"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -67,6 +76,7 @@ export enum UserRole {
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>;
+    checkAndNotifyOverdueMaintenance(flatNumber: bigint, month: string, year: bigint): Promise<void>;
     createNotice(title: string, message: string, expiryDate: Time | null): Promise<bigint>;
     createVisitorRequest(visitorName: string, purpose: string, flatNumber: bigint, mobileNumber: string): Promise<bigint>;
     getAllComplaints(): Promise<Array<Complaint>>;
@@ -87,13 +97,17 @@ export interface backendInterface {
     getWhatsappNumber(): Promise<string>;
     initializePassword(userId: string, password: string): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
+    isCallerApproved(): Promise<boolean>;
+    listApprovals(): Promise<Array<UserApprovalInfo>>;
     lodgeComplaint(flatNumber: bigint, category: string, description: string, priority: string | null): Promise<bigint>;
     markAllNotificationsAsRead(): Promise<void>;
     markNotificationAsRead(notificationId: bigint): Promise<void>;
     notifyOverdueFlats(month: string, year: bigint): Promise<void>;
     recordExpenditure(month: string, year: bigint, items: Array<[string, bigint]>, totalAmount: bigint, notes: string | null): Promise<void>;
     recordPayment(flatNumber: bigint, month: string, year: bigint, upiRef: string, timestamp: Time): Promise<void>;
+    requestApproval(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
     setUpiId(newUpiId: string): Promise<void>;
     setWhatsappNumber(newNumber: string): Promise<void>;
     updateComplaintStatus(complaintId: bigint, newStatus: string, resolutionNote: string | null): Promise<void>;

@@ -1,52 +1,31 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-03T15:43:03.839Z",
-  "summary": "The diff clearly adds a pre-deployment cycles/wallet readiness check and related troubleshooting documentation, but the provided (truncated) evidence does not confirm that the retry loop, CaLM-specific failure handling, and “retries exhausted” non-zero exit + summary are implemented. Additionally, the diff updates project summary/state content describing unrelated frontend/PWA/notification features that were not requested.",
-  "missing_requirements": [
-    {
-      "id": "REQ-4",
-      "requirement": "Provide a retry-capable entrypoint that re-attempts `dfx deploy --network ic` multiple times with configurable delay, including continuing behavior after failures.",
-      "reason": "The script shows parsing of `--max-retries/--retry-delay` and prints configuration, but the diff excerpt is truncated before any retry loop or repeated `dfx deploy --network ic` execution is evidenced.",
-      "evidence": [
-        "frontend/deploy/ic-deploy-with-retry.sh"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Detect the known \"CaLM permanent canister reservation failed\" failure and print the existing recommended next steps (including pre-creating canisters), then continue according to configured retry behavior.",
-      "reason": "No evidence in the provided excerpt shows string matching for the CaLM error or printing the specified remediation steps; the file is truncated before any deployment attempt/error-handling logic is shown.",
-      "evidence": [
-        "frontend/deploy/ic-deploy-with-retry.sh",
-        "frontend/deploy/README.md"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "When all retries are exhausted, exit non-zero and print a concise summary indicating the last failure reason and where to find troubleshooting docs.",
-      "reason": "The excerpt does not show the end-of-retry behavior, a final non-zero exit on exhausted retries, or a pointer to troubleshooting documentation; truncation prevents verification.",
-      "evidence": [
-        "frontend/deploy/ic-deploy-with-retry.sh",
-        "frontend/deploy/README.md"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-06T09:09:42.490Z",
+  "summary": "The diff adds a dedicated startup error screen with Retry/Logout/Hard Reload actions, wires it into the app’s startup/auth gate when the caller profile query errors, and implements a best-effort hard reload utility that clears Cache Storage and unregisters service workers before reloading. No evidence suggests modifications to the read-only shadcn UI components or immutable hook files.",
+  "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Repository state/summary updates describing unrelated frontend product features (e.g., print-friendly report routes, PWA install UX, notifications center, dashboards/pages) not requested by the deployment-tooling BuildRequest.",
-      "reason": "The BuildRequest only asks for deployment retry tooling and cycles readiness checks + documentation; the diff includes modified summary/state files that add or emphasize unrelated application features.",
+      "description": "Project metadata/state tracking updates unrelated to runtime startup error handling (e.g., new/updated project_state.json feature request entries marked pending).",
+      "reason": "BuildRequest focuses on frontend startup reliability UI/actions; it does not request adding or updating repository-level project state tracking files.",
       "evidence": [
-        "frontend-file-summaries.txt",
         "project_state.json"
+      ]
+    },
+    {
+      "description": "Repository-wide 'frontend-file-summaries.txt' update describing many unrelated pages/features.",
+      "reason": "The BuildRequest does not request updating documentation/summary inventory files; changes appear ancillary to the requested startup error handling.",
+      "evidence": [
+        "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.56,
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/deploy/README.md",
-    "frontend/deploy/ic-deploy-with-retry.sh",
-    "frontend/docs/deployment-troubleshooting.md",
+    "frontend/src/App.tsx",
+    "frontend/src/components/StartupErrorScreen.tsx",
+    "frontend/src/utils/hardReload.ts",
     "project_state.json"
   ]
 }

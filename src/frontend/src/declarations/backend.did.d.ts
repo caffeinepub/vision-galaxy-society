@@ -10,6 +10,9 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type ApprovalStatus = { 'pending' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null };
 export interface Complaint {
   'id' : bigint,
   'status' : string,
@@ -48,6 +51,10 @@ export interface Notification {
   'timestamp' : Time,
 }
 export type Time = bigint;
+export interface UserApprovalInfo {
+  'status' : ApprovalStatus,
+  'principal' : Principal,
+}
 export interface UserProfile {
   'userType' : string,
   'userId' : string,
@@ -69,6 +76,10 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'changePassword' : ActorMethod<[string, string, string], undefined>,
+  'checkAndNotifyOverdueMaintenance' : ActorMethod<
+    [bigint, string, bigint],
+    undefined
+  >,
   'createNotice' : ActorMethod<[string, string, [] | [Time]], bigint>,
   'createVisitorRequest' : ActorMethod<
     [string, string, bigint, string],
@@ -98,6 +109,8 @@ export interface _SERVICE {
   'getWhatsappNumber' : ActorMethod<[], string>,
   'initializePassword' : ActorMethod<[string, string], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isCallerApproved' : ActorMethod<[], boolean>,
+  'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
   'lodgeComplaint' : ActorMethod<
     [bigint, string, string, [] | [string]],
     bigint
@@ -113,7 +126,9 @@ export interface _SERVICE {
     [bigint, string, bigint, string, Time],
     undefined
   >,
+  'requestApproval' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
   'setUpiId' : ActorMethod<[string], undefined>,
   'setWhatsappNumber' : ActorMethod<[string], undefined>,
   'updateComplaintStatus' : ActorMethod<
