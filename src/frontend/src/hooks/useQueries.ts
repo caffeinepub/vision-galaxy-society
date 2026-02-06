@@ -9,12 +9,21 @@ export function useGetCallerUserProfile() {
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserProfile();
+      console.log('[Profile Bootstrap] Starting profile fetch...');
+      try {
+        const profile = await actor.getCallerUserProfile();
+        console.log('[Profile Bootstrap] Success:', profile ? 'Profile exists' : 'No profile (new user)');
+        return profile;
+      } catch (error) {
+        console.error('[Profile Bootstrap] Failed:', error instanceof Error ? error.message : String(error));
+        throw error;
+      }
     },
     enabled: !!actor && !actorFetching,
     retry: false,
   });
 
+  // Return custom state that properly reflects actor dependency
   return {
     ...query,
     isLoading: actorFetching || query.isLoading,
@@ -29,9 +38,13 @@ export function useSaveCallerUserProfile() {
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.saveCallerUserProfile(profile);
+      await actor.saveCallerUserProfile(profile);
+      return profile;
     },
-    onSuccess: () => {
+    onSuccess: (savedProfile) => {
+      // Immediately set the query data to prevent modal flash
+      queryClient.setQueryData(['currentUserProfile'], savedProfile);
+      // Then invalidate to ensure consistency with backend
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });

@@ -9,11 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import type { UserProfile } from '../backend';
 
-interface ProfileSetupModalProps {
-  onComplete: () => void;
-}
-
-export default function ProfileSetupModal({ onComplete }: ProfileSetupModalProps) {
+export default function ProfileSetupModal() {
   const [name, setName] = useState('');
   const [userType, setUserType] = useState<string>('');
   const [flatNumber, setFlatNumber] = useState('');
@@ -56,7 +52,7 @@ export default function ProfileSetupModal({ onComplete }: ProfileSetupModalProps
     try {
       await saveProfileMutation.mutateAsync(profile);
       toast.success('Profile created successfully!');
-      onComplete();
+      // No need to call onComplete - the query cache update will trigger re-render
     } catch (error: any) {
       toast.error(error.message || 'Failed to create profile');
     }

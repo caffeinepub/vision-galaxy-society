@@ -1,48 +1,37 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T13:00:51.233Z",
+  "generatedAt": "2026-02-06T14:12:27.050Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Ensure the app never renders as a fully blank page in Draft/Preview by adding an HTML-level startup fallback UI in frontend/index.html that is visible before React mounts and that automatically switches to an error state if the JS app does not bootstrap within a short timeout (e.g., 5–10 seconds). The fallback must include a plain HTML message, a standard reload action, and a hard-reload action that clears service worker + caches (best-effort) and then reloads.",
+        "summary": "Fix the secretary Settings page so that editing any of the configuration fields (Monthly Maintenance Amount, Society UPI ID, Guard Mobile Number) correctly marks the form as changed and allows saving, instead of incorrectly showing/behaving like there is “No changes to save”.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/index.html",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/secretary/SettingsPage.tsx",
+          "frontend/src/utils/settingsValidation.ts"
         ],
         "matchedFiles": [
-          "frontend/index.html",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/secretary/SettingsPage.tsx",
+          "frontend/src/utils/settingsValidation.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add additional startup diagnostics to help identify why Draft is blank by logging critical bootstrap failures in a way that can be seen without React (e.g., console logging from index.html, plus rendering a short human-readable error hint in the HTML fallback when a script error/unhandled rejection occurs before React mounts). All user-facing text must be English.",
+        "summary": "Ensure the secretary Settings page baseline state is not stale across settings refetches or identity/actor changes, so the dirty-check reflects the currently loaded backend settings for the current logged-in principal.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/index.html"
+          "frontend/src/pages/secretary/SettingsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/index.html"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Force service worker cache invalidation again to eliminate stale behavior affecting Draft/Preview by bumping the cache version in frontend/public/sw.js and confirming the fetch handler never returns cached index.html for non-navigation requests (scripts/styles/assets/modules).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/public/sw.js"
-        ],
-        "matchedFiles": [
-          "frontend/public/sw.js"
+          "frontend/src/pages/secretary/SettingsPage.tsx"
         ]
       }
     ]
@@ -52,9 +41,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.html",
-    "frontend/public/sw.js",
-    "frontend/src/App.tsx",
+    "frontend/src/pages/secretary/SettingsPage.tsx",
+    "frontend/src/utils/settingsValidation.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

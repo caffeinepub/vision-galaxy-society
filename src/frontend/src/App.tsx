@@ -3,6 +3,7 @@ import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from './hooks/useQueries';
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useActor } from './hooks/useActor';
 import LoginPage from './pages/LoginPage';
 import FlatDashboardPage from './pages/flat/FlatDashboardPage';
 import SecretaryDashboardPage from './pages/secretary/SecretaryDashboardPage';
@@ -35,11 +36,12 @@ import ProfileSetupModal from './components/ProfileSetupModal';
 import StartupErrorScreen from './components/StartupErrorScreen';
 import StartupErrorBoundary from './components/StartupErrorBoundary';
 import { Toaster } from '@/components/ui/sonner';
+import { sanitizeError } from './utils/sanitizeError';
 
 function RootComponent() {
   const { identity, isInitializing, clear } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading, isFetched, isError, refetch } = useGetCallerUserProfile();
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const { actor, isFetching: actorFetching } = useActor();
+  const { data: userProfile, isLoading: profileLoading, isFetched, isError, error, refetch } = useGetCallerUserProfile();
   const queryClient = useQueryClient();
 
   const isAuthenticated = !!identity;
@@ -50,23 +52,38 @@ function RootComponent() {
     window.dispatchEvent(new Event('react-mounted'));
   }, []);
 
+  // Log identity and actor state changes for diagnostics
   useEffect(() => {
-    if (isAuthenticated && !profileLoading && isFetched && userProfile === null) {
-      setShowProfileSetup(true);
-    } else {
-      setShowProfileSetup(false);
+    if (identity) {
+      console.log('[App] Identity loaded - user authenticated');
     }
-  }, [isAuthenticated, profileLoading, isFetched, userProfile]);
+  }, [identity]);
 
-  // Handle logout
+  useEffect(() => {
+    if (actor && !actorFetching) {
+      console.log('[App] Actor ready');
+    }
+  }, [actor, actorFetching]);
+
+  // Reset profile query when identity changes to authenticated
+  useEffect(() => {
+    if (isAuthenticated && actor) {
+      console.log('[App] Identity authenticated, resetting profile query');
+      queryClient.resetQueries({ queryKey: ['currentUserProfile'] });
+    }
+  }, [isAuthenticated, actor, queryClient]);
+
+  // Handle logout - clear identity and all cached data
   const handleLogout = async () => {
+    console.log('[App] Logging out - clearing identity and cache');
     await clear();
     queryClient.clear();
   };
 
-  // Handle retry
+  // Handle retry - reset and refetch profile
   const handleRetry = () => {
-    queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+    console.log('[App] Retrying profile bootstrap');
+    queryClient.resetQueries({ queryKey: ['currentUserProfile'] });
     refetch();
   };
 
@@ -89,7 +106,9 @@ function RootComponent() {
 
   // Show error screen if profile fetch failed
   if (isError) {
-    return <StartupErrorScreen onRetry={handleRetry} onLogout={handleLogout} />;
+    const errorDetail = sanitizeError(error);
+    console.error('[App] Startup error:', errorDetail);
+    return <StartupErrorScreen onRetry={handleRetry} onLogout={handleLogout} errorDetail={errorDetail} />;
   }
 
   // Show loading while fetching profile
@@ -104,14 +123,15 @@ function RootComponent() {
     );
   }
 
-  // Show profile setup modal if profile doesn't exist
+  // Show profile setup modal if profile doesn't exist (only when definitively fetched and null)
+  const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
   if (showProfileSetup) {
-    return <ProfileSetupModal onComplete={() => setShowProfileSetup(false)} />;
+    return <ProfileSetupModal />;
   }
 
   // Show error screen if profile is still null after fetch completed (shouldn't happen but safety check)
   if (!userProfile) {
-    return <StartupErrorScreen onRetry={handleRetry} onLogout={handleLogout} />;
+    return <StartupErrorScreen onRetry={handleRetry} onLogout={handleLogout} errorDetail="Profile data is missing after successful fetch" />;
   }
 
   return (

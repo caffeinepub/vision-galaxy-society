@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Prevent Draft/Preview from ever showing a fully blank screen by adding an HTML-level startup fallback, improved pre-React diagnostics, and refreshed service worker caching behavior.
+**Goal:** Fix the secretary Settings page dirty-check so edits to Maintenance Amount, Society UPI ID, or Guard Mobile Number are detected correctly and the configuration can be saved reliably.
 
 **Planned changes:**
-- Add an HTML startup fallback UI in `frontend/index.html` that shows immediately before React mounts, then hides when the app successfully bootstraps.
-- Implement a short bootstrap timeout (e.g., 5–10 seconds) that switches the fallback into an error state if React/JS does not mount in time, with Reload and Hard Reload (Clear Cache) actions.
-- Add pre-React startup diagnostics: console logging from `index.html` and a short English on-screen hint when a script error or unhandled rejection occurs before React mounts.
-- Bump the service worker cache version in `frontend/public/sw.js` and adjust fetch handling to ensure cached `index.html` is only used for true navigation/document requests (not scripts/styles/assets/modules).
+- Update `frontend/src/pages/secretary/SettingsPage.tsx` dirty-check logic to compare normalized values (trim text inputs; compare maintenance amount numerically) and only show “No changes to save” when values are effectively identical to the last loaded/saved baseline.
+- Ensure the form’s dirty-check baseline refreshes when `useGetSecretarySettings()` returns new settings (refetch after save, or switching logged-in user), as long as there are no unsaved local edits.
+- After a successful save, sync the displayed fields and the baseline to the saved (normalized) values so the Save button state remains correct.
 
-**User-visible outcome:** Opening the Draft/Preview URL will always show either the app or a visible HTML fallback (never a blank page). If startup fails, the user sees an English error hint plus Reload and Hard Reload (Clear Cache) options to recover.
+**User-visible outcome:** On the secretary Settings page, changing any of the three configuration fields enables Save (when valid), “No changes to save” only appears when nothing effectively changed, and settings state stays correct after saves/refetches or logging in as a different user.

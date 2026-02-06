@@ -7,9 +7,10 @@ import { hardReload } from '@/utils/hardReload';
 interface StartupErrorScreenProps {
   onRetry: () => void;
   onLogout: () => void;
+  errorDetail?: string;
 }
 
-export default function StartupErrorScreen({ onRetry, onLogout }: StartupErrorScreenProps) {
+export default function StartupErrorScreen({ onRetry, onLogout, errorDetail }: StartupErrorScreenProps) {
   const handleHardReload = async () => {
     await hardReload();
   };
@@ -27,6 +28,13 @@ export default function StartupErrorScreen({ onRetry, onLogout }: StartupErrorSc
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {errorDetail && (
+            <Alert variant="destructive">
+              <AlertDescription className="text-sm">
+                <strong>Error details:</strong> {errorDetail}
+              </AlertDescription>
+            </Alert>
+          )}
           <Alert>
             <AlertDescription>
               Please try one of the recovery options below. If the problem persists, contact support.

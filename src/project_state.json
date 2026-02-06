@@ -4,37 +4,29 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Draft preview is showing a blank screen (now also blank in draft)."
+    "Secretary profile settings changes are not being saved; system reports \"nothing to change\"."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-ensure-the-app-never-renders-as-a-fully-blank-page-in-draft-preview-by-adding-an-html-level-startup-fallback-ui-in-frontend-index-html-that-is-visible-before-react-mounts-and-that-automatically-switches-to-an-error-state-if-the-js-app-does-not-bootstrap-within-a-short-timeout-e-g-5-10-seconds-the-fallback-must-include-a-plain-html-message-a-standard-reload-action-and-a-hard-reload-action-that-clears-service-worker-caches-best-effort-and-then-reloads",
-      "title": "Ensure the app never renders as a fully blank page in Draft/Preview by adding an HTML-level startup fallback UI in frontend/index.html that is visible before React mounts and that automatically switches to an error state if the JS app does not bootstrap within a short timeout (e.g., 5–10 seconds). The fallback must include a plain HTML message, a standard reload action, and a hard-reload action that clears service worker + caches (best-effort) and then reloads.",
+      "id": "feature-fix-the-secretary-settings-page-so-that-editing-any-of-the-configuration-fields-monthly-maintenance-amount-society-upi-id-guard-mobile-number-correctly-marks-the-form-as-changed-and-allows-saving-instead-of-incorrectly-showing-behaving-like-there-is-no-changes-to-save",
+      "title": "Fix the secretary Settings page so that editing any of the configuration fields (Monthly Maintenance Amount, Society UPI ID, Guard Mobile Number) correctly marks the form as changed and allows saving, instead of incorrectly showing/behaving like there is “No changes to save”.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-additional-startup-diagnostics-to-help-identify-why-draft-is-blank-by-logging-critical-bootstrap-failures-in-a-way-that-can-be-seen-without-react-e-g-console-logging-from-index-html-plus-rendering-a-short-human-readable-error-hint-in-the-html-fallback-when-a-script-error-unhandled-rejection-occurs-before-react-mounts-all-user-facing-text-must-be-english",
-      "title": "Add additional startup diagnostics to help identify why Draft is blank by logging critical bootstrap failures in a way that can be seen without React (e.g., console logging from index.html, plus rendering a short human-readable error hint in the HTML fallback when a script error/unhandled rejection occurs before React mounts). All user-facing text must be English.",
+      "id": "feature-ensure-the-secretary-settings-page-baseline-state-is-not-stale-across-settings-refetches-or-identity-actor-changes-so-the-dirty-check-reflects-the-currently-loaded-backend-settings-for-the-current-logged-in-principal",
+      "title": "Ensure the secretary Settings page baseline state is not stale across settings refetches or identity/actor changes, so the dirty-check reflects the currently loaded backend settings for the current logged-in principal.",
       "reqIds": [
         "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-force-service-worker-cache-invalidation-again-to-eliminate-stale-behavior-affecting-draft-preview-by-bumping-the-cache-version-in-frontend-public-sw-js-and-confirming-the-fetch-handler-never-returns-cached-index-html-for-non-navigation-requests-scripts-styles-assets-modules",
-      "title": "Force service worker cache invalidation again to eliminate stale behavior affecting Draft/Preview by bumping the cache version in frontend/public/sw.js and confirming the fetch handler never returns cached index.html for non-navigation requests (scripts/styles/assets/modules).",
-      "reqIds": [
-        "REQ-3"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [],
-  "projectName": "Fix draft preview blank screen and add non-JS fallback diagnostics",
+  "projectName": "Fix secretary settings not saving due to incorrect 'No changes to save' dirty-check",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

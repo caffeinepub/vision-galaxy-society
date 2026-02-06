@@ -1,61 +1,32 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T13:00:51.230Z",
-  "summary": "REQ-1/REQ-2/REQ-3 appear to be implemented via an HTML startup fallback in frontend/index.html, a React-mounted signal in App.tsx to hide the fallback, and a service worker cache version bump plus stricter fetch handling in frontend/public/sw.js. However, the diff also includes several unrelated feature/behavior changes (visitor request flows, profile setup, notifications, docs, logo behavior) not requested by the BuildRequest.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-06T14:12:27.048Z",
+  "summary": "Diff adds normalized baseline + dirty-check logic for secretary settings and introduces shared validation/normalization helpers. However, due to truncation of SettingsPage.tsx, the implementation of Save button enablement, “No changes to save” helper text behavior, and post-save baseline updates cannot be fully verified from the provided evidence.",
+  "missing_requirements": [
     {
-      "description": "Visitor request feature work across guard/flat pages (create/detail/approve-decline flows, flat-number validation, WhatsApp deep link generation).",
-      "reason": "BuildRequest scope is limited to fixing blank Draft/Preview screen, adding HTML-level startup fallback diagnostics, and service worker cache invalidation behavior; visitor request UX/logic changes are unrelated and explicitly disallowed as new product features unrelated to the blank screen issue.",
+      "id": "REQ-1",
+      "requirement": "After changing any of the three configuration inputs from their loaded values, the Save Configuration button becomes enabled (unless validation errors exist), and the “No changes to save” helper text only appears when the normalized current values equal the normalized baseline.",
+      "reason": "The diff shows normalized dirty-check computation (isDirty) and normalization utilities, but the portion of SettingsPage.tsx that wires isDirty + validation errors into the Save button disabled state and the “No changes to save” helper text is truncated, so this acceptance criterion cannot be confirmed as implemented.",
       "evidence": [
-        "frontend-file-summaries.txt",
-        "frontend/src/pages/guard/VisitorRequestsPage.tsx",
-        "frontend/src/pages/guard/VisitorRequestCreatePage.tsx",
-        "frontend/src/pages/guard/VisitorRequestDetailPage.tsx",
-        "frontend/src/pages/flat/VisitorRequestsPage.tsx"
+        "frontend/src/pages/secretary/SettingsPage.tsx (truncated after isDirty; UI wiring not shown)"
       ]
     },
     {
-      "description": "Profile setup modal changes (role selection, flat number dropdown scheme 101-523, additional validation).",
-      "reason": "Not requested by REQ-1/2/3 and appears to be unrelated product behavior change.",
+      "id": "REQ-2",
+      "requirement": "After saving successfully, the form fields and baseline both reflect the saved (normalized) values, and subsequent renders do not revert the Save button back to a disabled state incorrectly.",
+      "reason": "While the diff shows baseline initialization/update on settings refetch when there are no unsaved edits, the save handler/mutation success path is not visible in the truncated SettingsPage.tsx, so it cannot be verified that baseline and form state are updated to the saved normalized values immediately after a successful save.",
       "evidence": [
-        "frontend-file-summaries.txt",
-        "frontend/src/components/ProfileSetupModal.tsx"
-      ]
-    },
-    {
-      "description": "Notifications page behavior additions (unread/read separation, mark-as-read actions, formatting, empty states).",
-      "reason": "Not requested by REQ-1/2/3; constitutes additional feature work beyond fixing blank screen and adding startup diagnostics.",
-      "evidence": [
-        "frontend-file-summaries.txt",
-        "frontend/src/pages/common/NotificationsPage.tsx"
-      ]
-    },
-    {
-      "description": "App layout/logo loading hardening and localStorage-driven custom logo updates.",
-      "reason": "Not requested by REQ-1/2/3; unrelated UI behavior change beyond the blank screen + diagnostics requirements.",
-      "evidence": [
-        "frontend-file-summaries.txt",
-        "frontend/src/components/layout/AppLayout.tsx"
-      ]
-    },
-    {
-      "description": "Added/updated mobile/PWA/deploy documentation and manifest changes for IC hosting compatibility.",
-      "reason": "Documentation/manifest changes were not requested by REQ-1/2/3; may be helpful but are out of stated scope.",
-      "evidence": [
-        "frontend-file-summaries.txt",
-        "frontend/public/manifest.webmanifest",
-        "frontend/README.mobile-and-deploy.md"
+        "frontend/src/pages/secretary/SettingsPage.tsx (truncated; mutation success/onSuccess handling not shown)"
       ]
     }
   ],
-  "confidence": 0.74,
+  "hallucinated_features": [],
+  "confidence": 0.54,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/index.html",
-    "frontend/public/sw.js",
-    "frontend/src/App.tsx",
+    "frontend/src/pages/secretary/SettingsPage.tsx",
+    "frontend/src/utils/settingsValidation.ts",
     "project_state.json"
   ]
 }

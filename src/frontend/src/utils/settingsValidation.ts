@@ -87,3 +87,38 @@ export function validateAllSettings(
     errors,
   };
 }
+
+/**
+ * Normalizes maintenance amount to canonical string form
+ * Converts to integer and back to string to remove leading zeros
+ */
+export function normalizeMaintenanceAmount(value: string): string {
+  const num = parseInt(value, 10);
+  return isNaN(num) ? value : num.toString();
+}
+
+/**
+ * Normalizes text fields by trimming whitespace
+ */
+export function normalizeTextField(value: string): string {
+  return value.trim();
+}
+
+/**
+ * Normalizes all settings values for consistent comparison
+ */
+export function normalizeSettings(settings: {
+  maintenanceAmount: string;
+  upiId: string;
+  guardMobileNumber: string;
+}): {
+  maintenanceAmount: string;
+  upiId: string;
+  guardMobileNumber: string;
+} {
+  return {
+    maintenanceAmount: normalizeMaintenanceAmount(settings.maintenanceAmount),
+    upiId: normalizeTextField(settings.upiId),
+    guardMobileNumber: normalizeTextField(settings.guardMobileNumber),
+  };
+}

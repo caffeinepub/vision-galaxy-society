@@ -7,7 +7,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, Image as ImageIcon, AlertCircle, CheckCircle2, Settings, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGetSecretarySettings, useUpdateSecretarySettings } from '../../hooks/useQueries';
-import { validateMaintenanceAmount, validateUpiId, validateGuardMobileNumber, validateAllSettings } from '../../utils/settingsValidation';
+import { 
+  validateMaintenanceAmount, 
+  validateUpiId, 
+  validateGuardMobileNumber, 
+  validateAllSettings,
+  normalizeSettings
+} from '../../utils/settingsValidation';
 import SettingsSkeleton from './components/SettingsSkeleton';
 
 export default function SettingsPage() {
@@ -27,7 +33,7 @@ export default function SettingsPage() {
   const [upiId, setUpiId] = useState('');
   const [guardMobileNumber, setGuardMobileNumber] = useState('');
 
-  // Baseline for dirty detection
+  // Baseline for dirty detection (normalized values)
   const [baseline, setBaseline] = useState<{
     maintenanceAmount: string;
     upiId: string;
@@ -37,27 +43,65 @@ export default function SettingsPage() {
   // Field-level validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Initialize form values when settings load
+  // Initialize/update form values when settings load or change
   useEffect(() => {
-    if (settings && !baseline) {
-      const initialValues = {
+    if (settings && isFetched) {
+      const newValues = {
         maintenanceAmount: settings.maintenanceAmount.toString(),
         upiId: settings.upiId,
         guardMobileNumber: settings.guardMobileNumber,
       };
-      setMaintenanceAmount(initialValues.maintenanceAmount);
-      setUpiId(initialValues.upiId);
-      setGuardMobileNumber(initialValues.guardMobileNumber);
-      setBaseline(initialValues);
+      
+      // Normalize the new values for baseline
+      const normalizedNewValues = normalizeSettings(newValues);
+      
+      // Only update if we don't have a baseline yet, or if there are no unsaved edits
+      if (!baseline) {
+        // First load: set both form and baseline
+        setMaintenanceAmount(newValues.maintenanceAmount);
+        setUpiId(newValues.upiId);
+        setGuardMobileNumber(newValues.guardMobileNumber);
+        setBaseline(normalizedNewValues);
+      } else {
+        // Check if current form values have unsaved edits
+        const currentNormalized = normalizeSettings({
+          maintenanceAmount,
+          upiId,
+          guardMobileNumber,
+        });
+        
+        const hasUnsavedEdits = 
+          currentNormalized.maintenanceAmount !== baseline.maintenanceAmount ||
+          currentNormalized.upiId !== baseline.upiId ||
+          currentNormalized.guardMobileNumber !== baseline.guardMobileNumber;
+        
+        // Only update if there are no unsaved edits
+        if (!hasUnsavedEdits) {
+          setMaintenanceAmount(newValues.maintenanceAmount);
+          setUpiId(newValues.upiId);
+          setGuardMobileNumber(newValues.guardMobileNumber);
+          setBaseline(normalizedNewValues);
+        }
+      }
     }
-  }, [settings, baseline]);
+  }, [settings, isFetched]);
 
-  // Check if form is dirty (changed from baseline)
-  const isDirty = baseline && (
-    maintenanceAmount !== baseline.maintenanceAmount ||
-    upiId !== baseline.upiId ||
-    guardMobileNumber !== baseline.guardMobileNumber
-  );
+  // Check if form is dirty (changed from baseline) using normalized comparison
+  const isDirty = (() => {
+    if (!baseline) return false;
+    
+    const currentNormalized = normalizeSettings({
+      maintenanceAmount,
+      upiId,
+      guardMobileNumber,
+    });
+    
+    return (
+      currentNormalized.maintenanceAmount !== baseline.maintenanceAmount ||
+      currentNormalized.upiId !== baseline.upiId ||
+      currentNormalized.guardMobileNumber !== baseline.guardMobileNumber
+    );
+  })();
 
   // Validate on change
   const handleMaintenanceAmountChange = (value: string) => {
@@ -177,19 +221,21 @@ export default function SettingsPage() {
     }
 
     const amount = parseInt(maintenanceAmount, 10);
+    const trimmedUpiId = upiId.trim();
+    const trimmedGuardMobile = guardMobileNumber.trim();
 
     try {
       await updateSettingsMutation.mutateAsync({
         maintenanceAmount: BigInt(amount),
-        upiId: upiId.trim(),
-        guardMobileNumber: guardMobileNumber.trim(),
+        upiId: trimmedUpiId,
+        guardMobileNumber: trimmedGuardMobile,
       });
       
-      // Update baseline after successful save
+      // Update baseline and form to normalized saved values
       const newBaseline = {
         maintenanceAmount: amount.toString(),
-        upiId: upiId.trim(),
-        guardMobileNumber: guardMobileNumber.trim(),
+        upiId: trimmedUpiId,
+        guardMobileNumber: trimmedGuardMobile,
       };
       setBaseline(newBaseline);
       setMaintenanceAmount(newBaseline.maintenanceAmount);

@@ -1,70 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Fix draft preview blank screen and add non-JS fallback diagnostics",
+  "title": "Fix secretary settings not saving due to incorrect 'No changes to save' dirty-check",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Ensure the app never renders as a fully blank page in Draft/Preview by adding an HTML-level startup fallback UI in frontend/index.html that is visible before React mounts and that automatically switches to an error state if the JS app does not bootstrap within a short timeout (e.g., 5–10 seconds). The fallback must include a plain HTML message, a standard reload action, and a hard-reload action that clears service worker + caches (best-effort) and then reloads.",
+      "text": "Fix the secretary Settings page so that editing any of the configuration fields (Monthly Maintenance Amount, Society UPI ID, Guard Mobile Number) correctly marks the form as changed and allows saving, instead of incorrectly showing/behaving like there is “No changes to save”.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "In draft it is now also showing blank"
+          "The bug is still there where the secretary's profile settings is not being saved saying nothing to change"
         ]
       },
       "acceptanceCriteria": [
-        "When opening the Draft/Preview URL, the user always sees either the React app or an HTML fallback screen; there is no fully blank/white screen state.",
-        "If the JS bundle fails to load or React fails to mount, the HTML fallback switches to an error state within the configured timeout and shows Reload and Hard Reload (Clear Cache) actions.",
-        "Hard Reload from the HTML fallback attempts to unregister service workers and clear Cache Storage, then reloads the page."
+        "On `frontend/src/pages/secretary/SettingsPage.tsx`, after changing any of the three configuration inputs from their currently loaded values, the Save Configuration button becomes enabled (unless validation errors exist).",
+        "The “No changes to save” helper text only appears when the currently displayed input values are effectively identical to the last loaded/saved values (after normalization such as trimming text fields and comparing the maintenance amount numerically).",
+        "If the user types leading/trailing spaces into UPI ID or Guard Mobile Number, the dirty-check uses trimmed values so that saving behaves consistently with what is sent to the backend (trimmed).",
+        "Maintenance amount dirty-check compares numeric values (e.g., '1500' and '01500' should be treated as the same amount)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add additional startup diagnostics to help identify why Draft is blank by logging critical bootstrap failures in a way that can be seen without React (e.g., console logging from index.html, plus rendering a short human-readable error hint in the HTML fallback when a script error/unhandled rejection occurs before React mounts). All user-facing text must be English.",
+      "text": "Ensure the secretary Settings page baseline state is not stale across settings refetches or identity/actor changes, so the dirty-check reflects the currently loaded backend settings for the current logged-in principal.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "In draft it is now also showing blank"
+          "The bug is still there where the secretary's profile settings is not being saved saying nothing to change"
         ]
       },
       "acceptanceCriteria": [
-        "If an error occurs before React mounts, it is logged to the browser console and the HTML fallback shows a short English message indicating startup failed (without exposing sensitive data).",
-        "If no error occurs and React mounts successfully, the HTML fallback is removed/hidden and does not visually interfere with the app."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Force service worker cache invalidation again to eliminate stale behavior affecting Draft/Preview by bumping the cache version in frontend/public/sw.js and confirming the fetch handler never returns cached index.html for non-navigation requests (scripts/styles/assets/modules).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "In draft it is now also showing blank"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Service worker CACHE_NAME is updated to a new version string (e.g., vision-galaxy-v3).",
-        "JS/CSS/module/image requests are never fulfilled by cached index.html; only true navigation/document requests may fall back to cached index.html.",
-        "After a hard reload, the client installs/activates the new service worker cache version and the Draft/Preview page loads without a blank screen."
+        "When the query `useGetSecretarySettings()` returns new settings (e.g., after a successful save + invalidation/refetch, or after logging out and logging in as another user), the form’s baseline used for dirty detection updates to match the latest fetched settings as long as the user does not currently have unsaved edits.",
+        "After saving successfully, the form fields and baseline both reflect the saved (normalized) values, and subsequent renders do not revert the Save button back to a disabled state incorrectly."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/components/ui (read-only Shadcn components).",
-    "Do not edit immutable hook/bootstrap files: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
-    "Keep the backend as a single Motoko actor; no additional backend services."
+    "Do not edit any files under frontend/src/components/ui (Shadcn components are read-only).",
+    "Do not edit immutable hook files: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
+    "Keep the backend as a single Motoko actor (no new backend services)."
   ],
   "nonGoals": [
-    "Adding new product features unrelated to fixing the blank screen issue.",
-    "Introducing third-party monitoring/analytics services or external logging backends."
+    "Adding new settings fields beyond maintenance amount, UPI ID, and guard mobile number.",
+    "Changing authorization rules for who is allowed to update secretary settings (unless required to fix the specific reported bug).",
+    "Implementing persistent backend storage for the uploaded logo (logo is currently localStorage-based and is not part of this bug)."
   ],
   "imageRequirements": {
     "required": [],
