@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from '../../hooks/useQueries';
+import { useGetCallerUserProfile, useGetCallerNotifications } from '../../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Home, 
   CreditCard, 
@@ -16,9 +17,12 @@ import {
   DoorOpen,
   AlertCircle,
   Menu,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { useState } from 'react';
+import { usePwaInstall } from '../../hooks/usePwaInstall';
+import { toast } from 'sonner';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -29,12 +33,29 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const { data: userProfile } = useGetCallerUserProfile();
+  const { data: notifications = [] } = useGetCallerNotifications();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isInstallable, promptInstall } = usePwaInstall();
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleLogout = async () => {
     await clear();
     queryClient.clear();
     navigate({ to: '/' });
+  };
+
+  const handleInstall = async () => {
+    if (isInstallable) {
+      const installed = await promptInstall();
+      if (installed) {
+        toast.success('App installed successfully!');
+      }
+    } else {
+      toast.info('To install on mobile: tap Share > Add to Home Screen', {
+        duration: 5000,
+      });
+    }
   };
 
   const navItems = userProfile?.userType === 'FlatOwner' ? [
@@ -60,7 +81,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container flex h-16 items-center justify-between px-4">
@@ -83,6 +104,31 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate({ to: '/notifications' })}
+              className="relative hidden sm:flex"
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleInstall}
+              className="hidden sm:flex"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Install
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -115,6 +161,25 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {mobileMenuOpen && (
           <div className="border-t sm:hidden">
             <nav className="container px-4 py-4 space-y-2">
+              <Button
+                variant="ghost"
+                className="w-full justify-start relative"
+                onClick={() => {
+                  navigate({ to: '/notifications' });
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <Bell className="h-4 w-4 mr-3" />
+                Notifications
+                {unreadCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="ml-auto h-5 px-2 text-xs"
+                  >
+                    {unreadCount}
+                  </Badge>
+                )}
+              </Button>
               {navItems.map((item) => (
                 <Button
                   key={item.path}
@@ -129,6 +194,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   {item.label}
                 </Button>
               ))}
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => {
+                  handleInstall();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <Download className="h-4 w-4 mr-3" />
+                Install App
+              </Button>
               <Button
                 variant="ghost"
                 className="w-full justify-start"
@@ -173,7 +249,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Main Content */}
-      <main className="container px-4 py-8">
+      <main className="container px-4 py-8 flex-1">
         {children}
       </main>
 

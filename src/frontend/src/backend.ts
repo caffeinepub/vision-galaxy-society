@@ -90,14 +90,12 @@ export class ExternalBlob {
     }
 }
 export type Time = bigint;
-export interface Complaint {
+export interface Notification {
     id: bigint;
-    status: string;
-    resolutionNote?: string;
-    description: string;
-    category: string;
-    priority?: string;
-    flatNumber: bigint;
+    recipient: Principal;
+    isRead: boolean;
+    message: string;
+    timestamp: Time;
 }
 export interface MaintenanceRecord {
     paymentTimestamp?: Time;
@@ -112,6 +110,15 @@ export interface Notice {
     title: string;
     expiryDate?: Time;
     message: string;
+}
+export interface Complaint {
+    id: bigint;
+    status: string;
+    resolutionNote?: string;
+    description: string;
+    category: string;
+    priority?: string;
+    flatNumber: bigint;
 }
 export interface Expenditure {
     month: string;
@@ -149,6 +156,7 @@ export interface backendInterface {
     getAllMaintenanceRecords(month: string, year: bigint): Promise<Array<MaintenanceRecord>>;
     getAllNotices(): Promise<Array<Notice>>;
     getAllVisitorRequests(): Promise<Array<VisitorRequest>>;
+    getCallerNotifications(): Promise<Array<Notification>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getComplaintsByFlat(flatNumber: bigint): Promise<Array<Complaint>>;
@@ -158,11 +166,14 @@ export interface backendInterface {
     getOverdueFlats(month: string, year: bigint): Promise<Array<bigint>>;
     getUpiId(): Promise<string>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
-    getVisitorRequestsForFlat(flatNumber: bigint): Promise<Array<VisitorRequest>>;
+    getVisitorRequestsByFlat(flatNumber: bigint): Promise<Array<VisitorRequest>>;
     getWhatsappNumber(): Promise<string>;
     initializePassword(userId: string, password: string): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     lodgeComplaint(flatNumber: bigint, category: string, description: string, priority: string | null): Promise<bigint>;
+    markAllNotificationsAsRead(): Promise<void>;
+    markNotificationAsRead(notificationId: bigint): Promise<void>;
+    notifyOverdueFlats(month: string, year: bigint): Promise<void>;
     recordExpenditure(month: string, year: bigint, items: Array<[string, bigint]>, totalAmount: bigint, notes: string | null): Promise<void>;
     recordPayment(flatNumber: bigint, month: string, year: bigint, upiRef: string, timestamp: Time): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
@@ -170,7 +181,7 @@ export interface backendInterface {
     setWhatsappNumber(newNumber: string): Promise<void>;
     updateComplaintStatus(complaintId: bigint, newStatus: string, resolutionNote: string | null): Promise<void>;
     updateFlatMobileNumbers(flatNumber: bigint, numbers: Array<string>): Promise<void>;
-    updateVisitorRequestStatus(requestId: bigint, status: string): Promise<void>;
+    updateVisitorRequestStatus(requestId: bigint, newStatus: string): Promise<void>;
 }
 import type { Complaint as _Complaint, Expenditure as _Expenditure, MaintenanceRecord as _MaintenanceRecord, Notice as _Notice, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -301,6 +312,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getCallerNotifications(): Promise<Array<Notification>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getCallerNotifications();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getCallerNotifications();
+            return result;
+        }
+    }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -427,17 +452,17 @@ export class Backend implements backendInterface {
             return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getVisitorRequestsForFlat(arg0: bigint): Promise<Array<VisitorRequest>> {
+    async getVisitorRequestsByFlat(arg0: bigint): Promise<Array<VisitorRequest>> {
         if (this.processError) {
             try {
-                const result = await this.actor.getVisitorRequestsForFlat(arg0);
+                const result = await this.actor.getVisitorRequestsByFlat(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getVisitorRequestsForFlat(arg0);
+            const result = await this.actor.getVisitorRequestsByFlat(arg0);
             return result;
         }
     }
@@ -494,6 +519,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.lodgeComplaint(arg0, arg1, arg2, to_candid_opt_n25(this._uploadFile, this._downloadFile, arg3));
+            return result;
+        }
+    }
+    async markAllNotificationsAsRead(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markAllNotificationsAsRead();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markAllNotificationsAsRead();
+            return result;
+        }
+    }
+    async markNotificationAsRead(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markNotificationAsRead(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markNotificationAsRead(arg0);
+            return result;
+        }
+    }
+    async notifyOverdueFlats(arg0: string, arg1: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.notifyOverdueFlats(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.notifyOverdueFlats(arg0, arg1);
             return result;
         }
     }

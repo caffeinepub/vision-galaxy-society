@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { UserProfile, MaintenanceRecord, Expenditure, Complaint, Notice, VisitorRequest } from '../backend';
+import type { UserProfile, MaintenanceRecord, Complaint, Notice, VisitorRequest, Notification, Expenditure } from '../backend';
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -73,20 +73,8 @@ export function useRecordPayment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceRecord'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceRecords'] });
+      queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
     },
-  });
-}
-
-export function useGetAllMaintenanceRecords(month: string, year: bigint) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<MaintenanceRecord[]>({
-    queryKey: ['allMaintenanceRecords', month, year.toString()],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllMaintenanceRecords(month, year);
-    },
-    enabled: !!actor && !isFetching,
   });
 }
 
@@ -103,31 +91,16 @@ export function useGetOverdueFlats(month: string, year: bigint) {
   });
 }
 
-export function useGetExpenditures(month: string, year: bigint) {
+export function useGetAllMaintenanceRecords(month: string, year: bigint) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<Expenditure | null>({
-    queryKey: ['expenditures', month, year.toString()],
+  return useQuery<MaintenanceRecord[]>({
+    queryKey: ['allMaintenanceRecords', month, year.toString()],
     queryFn: async () => {
-      if (!actor) return null;
-      return actor.getExpenditures(month, year);
+      if (!actor) return [];
+      return actor.getAllMaintenanceRecords(month, year);
     },
     enabled: !!actor && !isFetching,
-  });
-}
-
-export function useRecordExpenditure() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ month, year, items, totalAmount, notes }: { month: string; year: bigint; items: [string, bigint][]; totalAmount: bigint; notes: string | null }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.recordExpenditure(month, year, items, totalAmount, notes);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenditures'] });
-    },
   });
 }
 
@@ -284,6 +257,7 @@ export function useCreateNotice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allNotices'] });
+      queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
     },
   });
 }
@@ -312,7 +286,7 @@ export function useCreateVisitorRequest() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allVisitorRequests'] });
-      queryClient.invalidateQueries({ queryKey: ['visitorRequestsForFlat'] });
+      queryClient.invalidateQueries({ queryKey: ['visitorRequestsByFlat'] });
     },
   });
 }
@@ -330,14 +304,14 @@ export function useGetAllVisitorRequests() {
   });
 }
 
-export function useGetVisitorRequestsForFlat(flatNumber: bigint) {
+export function useGetVisitorRequestsByFlat(flatNumber: bigint) {
   const { actor, isFetching } = useActor();
 
   return useQuery<VisitorRequest[]>({
-    queryKey: ['visitorRequestsForFlat', flatNumber.toString()],
+    queryKey: ['visitorRequestsByFlat', flatNumber.toString()],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getVisitorRequestsForFlat(flatNumber);
+      return actor.getVisitorRequestsByFlat(flatNumber);
     },
     enabled: !!actor && !isFetching,
   });
@@ -354,7 +328,80 @@ export function useUpdateVisitorRequestStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allVisitorRequests'] });
-      queryClient.invalidateQueries({ queryKey: ['visitorRequestsForFlat'] });
+      queryClient.invalidateQueries({ queryKey: ['visitorRequestsByFlat'] });
+      queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
+    },
+  });
+}
+
+export function useGetCallerNotifications() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Notification[]>({
+    queryKey: ['callerNotifications'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getCallerNotifications();
+    },
+    enabled: !!actor && !isFetching,
+    refetchInterval: 30000,
+  });
+}
+
+export function useMarkNotificationAsRead() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (notificationId: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.markNotificationAsRead(notificationId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
+    },
+  });
+}
+
+export function useMarkAllNotificationsAsRead() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.markAllNotificationsAsRead();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
+    },
+  });
+}
+
+export function useGetExpenditures(month: string, year: bigint) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Expenditure | null>({
+    queryKey: ['expenditures', month, year.toString()],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getExpenditures(month, year);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useRecordExpenditure() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ month, year, items, totalAmount, notes }: { month: string; year: bigint; items: Array<[string, bigint]>; totalAmount: bigint; notes: string | null }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.recordExpenditure(month, year, items, totalAmount, notes);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['expenditures', variables.month, variables.year.toString()] });
     },
   });
 }

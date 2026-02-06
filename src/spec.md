@@ -1,19 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Build “Vision Galaxy Society” as an easy-to-use, role-based society management app for flats 1–23, covering maintenance payments (UPI deep link + status tracking), overdue reminders, expenditures, complaints, notices, and guard visitor requests via WhatsApp deep links.
+**Goal:** Improve IC mainnet deployment helper tooling by adding retry support for transient failures and a pre-deployment cycles/wallet readiness check with clear operator guidance.
 
 **Planned changes:**
-- Add role-based authentication with seeded accounts: Flat Owners (userId “1”–“23”, default password “Admin1”), plus Secretary and Guard accounts shown in the UI.
-- Add in-app change password flow requiring current password.
-- Implement maintenance tracking per month/per flat with statuses (Unpaid/Submitted/Approved/Rejected), UPI deep-link payment initiation, user submission of UTR + payment date/time, and secretary approve/reject workflow.
-- Show automatic in-app overdue reminders on/after the 6th of the month for flats without an Approved payment; provide a secretary overdue view.
-- Add monthly expenditure entry (secretary) with line items, totals, and optional notes; add read-only expenditure viewing by month for Flat Owners.
-- Add secretary settings to configure the receiving UPI ID and the WhatsApp sender number used in visitor-request links.
-- Add Flat Owner profile management for up to 4 mobile numbers (add/edit/remove; enforce max 4) and expose these numbers where needed for guard/secretary workflows.
-- Implement complaints: Flat Owner lodging + status visibility; secretary list/filter + status updates + resolution notes visible to the user.
-- Implement notices/announcements: secretary create (optional expiry), all users view feed + detail, hide expired notices.
-- Implement guard visitor request workflow: create request for a flat with visitor name/purpose, generate WhatsApp deep link to selected flat number, and allow Flat Owner to accept/decline in-app with guard-side status/timestamp updates.
-- Create role-based dashboards and straightforward navigation per role, and apply a coherent “Vision Galaxy Society” visual theme (not blue/purple) across screens.
+- Add or extend a deployment helper script under `frontend/deploy/` to retry `dfx deploy --network ic` for a configurable number of attempts with a configurable delay, with clear console output per attempt.
+- Detect/handle the known "CaLM permanent canister reservation failed" error by printing the recommended next steps (including pre-creating canisters) and continuing according to the configured retry behavior.
+- When retries are exhausted, exit with a non-zero code and print a concise summary including the last failure reason and where to find troubleshooting documentation.
+- Add a pre-deployment cycles/wallet readiness check step (automated or explicitly prompted) before running the deploy command.
+- If cycles/wallet readiness cannot be verified automatically, print exact commands the operator can run to verify wallet/cycles configuration and balance, then abort safely with a non-zero exit code.
+- Update documentation with an English-only section describing the cycles readiness check and remediation steps when cycles are missing/insufficient.
 
-**User-visible outcome:** Users can log in as Flat Owner/Secretary/Guard, see a role-appropriate dashboard, change their password, manage maintenance payments and overdue statuses, view or publish expenditures and notices, lodge and track complaints, and handle visitor approvals (guard via WhatsApp link, flat owner accepts/declines in-app) with all content presented in a consistent themed UI.
+**User-visible outcome:** Operators can run a single helper flow to deploy to IC mainnet that (1) checks cycles/wallet readiness before deploying and (2) retries failed deployments with clear guidance and a final failure summary if all attempts fail.

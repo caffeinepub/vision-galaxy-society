@@ -1,208 +1,145 @@
-import { useState } from 'react';
-import { useGetAllComplaints, useUpdateComplaintStatus } from '../../hooks/useQueries';
+import { useGetAllComplaints } from '../../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { Download, Printer, Loader2 } from 'lucide-react';
+import { generateCSV, downloadCSV } from '../../utils/csv';
+import { openPrintView } from '../../utils/print';
 
 export default function ComplaintsAdminPage() {
-  const { data: complaints = [] } = useGetAllComplaints();
-  const updateComplaintStatusMutation = useUpdateComplaintStatus();
+  const { data: complaints = [], isLoading, error } = useGetAllComplaints();
 
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [flatFilter, setFlatFilter] = useState<string>('all');
-  const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
-  const [newStatus, setNewStatus] = useState('');
-  const [resolutionNote, setResolutionNote] = useState('');
+  const handleExportCSV = () => {
+    const csvData = complaints.map(complaint => ({
+      'ID': complaint.id.toString(),
+      'Flat Number': complaint.flatNumber.toString(),
+      'Category': complaint.category,
+      'Description': complaint.description,
+      'Priority': complaint.priority || 'N/A',
+      'Status': complaint.status,
+      'Resolution Note': complaint.resolutionNote || 'N/A',
+    }));
 
-  const filteredComplaints = complaints.filter(complaint => {
-    if (statusFilter !== 'all' && complaint.status !== statusFilter) return false;
-    if (flatFilter !== 'all' && complaint.flatNumber.toString() !== flatFilter) return false;
-    return true;
-  });
-
-  const handleUpdateStatus = async () => {
-    if (!selectedComplaint || !newStatus) {
-      toast.error('Please select a status');
-      return;
-    }
-
-    try {
-      await updateComplaintStatusMutation.mutateAsync({
-        complaintId: selectedComplaint.id,
-        newStatus,
-        resolutionNote: resolutionNote || null,
-      });
-
-      toast.success('Complaint status updated successfully!');
-      setSelectedComplaint(null);
-      setNewStatus('');
-      setResolutionNote('');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update complaint status');
-    }
+    const csv = generateCSV(csvData, ['ID', 'Flat Number', 'Category', 'Description', 'Priority', 'Status', 'Resolution Note']);
+    downloadCSV(csv, `complaints-report-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
-      'Open': 'destructive',
-      'In Progress': 'default',
-      'Resolved': 'outline',
-      'Rejected': 'secondary',
-    };
-    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
+  const handlePrint = () => {
+    openPrintView('/reports/complaints/print');
   };
 
-  const uniqueFlats = Array.from(new Set(complaints.map(c => c.flatNumber.toString()))).sort((a, b) => Number(a) - Number(b));
+  const openCount = complaints.filter(c => c.status === 'Open').length;
+  const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Complaint Management</h1>
-        <p className="text-muted-foreground mt-1">Review and resolve resident complaints</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Complaint Management</h1>
+          <p className="text-muted-foreground mt-1">Review and resolve resident complaints</p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleExportCSV} variant="outline" disabled={isLoading || complaints.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button onClick={handlePrint} variant="outline" disabled={isLoading || complaints.length === 0}>
+            <Printer className="h-4 w-4 mr-2" />
+            Print
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <p className="text-destructive text-sm">Error loading complaints: {String(error)}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Total Complaints</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{complaints.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Open</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{openCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{resolvedCount}</div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Resolved">Resolved</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Flat Number</Label>
-              <Select value={flatFilter} onValueChange={setFlatFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Flats</SelectItem>
-                  {uniqueFlats.map(flat => (
-                    <SelectItem key={flat} value={flat}>Flat {flat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Complaints</CardTitle>
+          <CardTitle>All Complaints</CardTitle>
           <CardDescription>
-            Showing {filteredComplaints.length} of {complaints.length} complaints
+            Complaints from all flats
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredComplaints.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No complaints found
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : complaints.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p>No complaints found</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredComplaints.map(complaint => (
-                <Dialog key={complaint.id.toString()}>
-                  <DialogTrigger asChild>
-                    <div
-                      onClick={() => {
-                        setSelectedComplaint(complaint);
-                        setNewStatus(complaint.status);
-                        setResolutionNote(complaint.resolutionNote || '');
-                      }}
-                      className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{complaint.category}</h4>
-                            <Badge variant="outline" className="text-xs">
-                              Flat {complaint.flatNumber.toString()}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {complaint.description}
-                          </p>
-                        </div>
-                        {getStatusBadge(complaint.status)}
-                      </div>
-                    </div>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>{complaint.category}</DialogTitle>
-                      <DialogDescription>
-                        Complaint from Flat {complaint.flatNumber.toString()}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Description</Label>
-                        <p className="text-sm text-muted-foreground">{complaint.description}</p>
-                      </div>
-
-                      {complaint.priority && (
-                        <div className="space-y-2">
-                          <Label>Priority</Label>
-                          <Badge variant="outline">{complaint.priority}</Badge>
-                        </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <Label>Update Status</Label>
-                        <Select value={newStatus} onValueChange={setNewStatus}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Open">Open</SelectItem>
-                            <SelectItem value="In Progress">In Progress</SelectItem>
-                            <SelectItem value="Resolved">Resolved</SelectItem>
-                            <SelectItem value="Rejected">Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Resolution Note</Label>
-                        <Textarea
-                          value={resolutionNote}
-                          onChange={(e) => setResolutionNote(e.target.value)}
-                          placeholder="Add a note about the resolution"
-                          rows={3}
-                        />
-                      </div>
-
-                      <Button 
-                        onClick={handleUpdateStatus}
-                        disabled={updateComplaintStatusMutation.isPending}
-                        className="w-full"
-                      >
-                        {updateComplaintStatusMutation.isPending ? 'Updating...' : 'Update Complaint'}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Flat</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {complaints.map((complaint) => (
+                    <TableRow key={complaint.id.toString()}>
+                      <TableCell className="font-medium">#{complaint.id.toString()}</TableCell>
+                      <TableCell>Flat {complaint.flatNumber.toString()}</TableCell>
+                      <TableCell>{complaint.category}</TableCell>
+                      <TableCell className="max-w-xs truncate">{complaint.description}</TableCell>
+                      <TableCell>
+                        {complaint.priority ? (
+                          <Badge variant={complaint.priority === 'High' ? 'destructive' : 'secondary'}>
+                            {complaint.priority}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={complaint.status === 'Open' ? 'default' : 'outline'}>
+                          {complaint.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

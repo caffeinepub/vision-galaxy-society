@@ -40,6 +40,13 @@ export interface Notice {
   'expiryDate' : [] | [Time],
   'message' : string,
 }
+export interface Notification {
+  'id' : bigint,
+  'recipient' : Principal,
+  'isRead' : boolean,
+  'message' : string,
+  'timestamp' : Time,
+}
 export type Time = bigint;
 export interface UserProfile {
   'userType' : string,
@@ -74,6 +81,7 @@ export interface _SERVICE {
   >,
   'getAllNotices' : ActorMethod<[], Array<Notice>>,
   'getAllVisitorRequests' : ActorMethod<[], Array<VisitorRequest>>,
+  'getCallerNotifications' : ActorMethod<[], Array<Notification>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getComplaintsByFlat' : ActorMethod<[bigint], Array<Complaint>>,
@@ -86,7 +94,7 @@ export interface _SERVICE {
   'getOverdueFlats' : ActorMethod<[string, bigint], Array<bigint>>,
   'getUpiId' : ActorMethod<[], string>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'getVisitorRequestsForFlat' : ActorMethod<[bigint], Array<VisitorRequest>>,
+  'getVisitorRequestsByFlat' : ActorMethod<[bigint], Array<VisitorRequest>>,
   'getWhatsappNumber' : ActorMethod<[], string>,
   'initializePassword' : ActorMethod<[string, string], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
@@ -94,6 +102,9 @@ export interface _SERVICE {
     [bigint, string, string, [] | [string]],
     bigint
   >,
+  'markAllNotificationsAsRead' : ActorMethod<[], undefined>,
+  'markNotificationAsRead' : ActorMethod<[bigint], undefined>,
+  'notifyOverdueFlats' : ActorMethod<[string, bigint], undefined>,
   'recordExpenditure' : ActorMethod<
     [string, bigint, Array<[string, bigint]>, bigint, [] | [string]],
     undefined

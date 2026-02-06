@@ -8,14 +8,12 @@ export interface None {
 }
 export type Option<T> = Some<T> | None;
 export type Time = bigint;
-export interface Complaint {
+export interface Notification {
     id: bigint;
-    status: string;
-    resolutionNote?: string;
-    description: string;
-    category: string;
-    priority?: string;
-    flatNumber: bigint;
+    recipient: Principal;
+    isRead: boolean;
+    message: string;
+    timestamp: Time;
 }
 export interface MaintenanceRecord {
     paymentTimestamp?: Time;
@@ -30,6 +28,15 @@ export interface Notice {
     title: string;
     expiryDate?: Time;
     message: string;
+}
+export interface Complaint {
+    id: bigint;
+    status: string;
+    resolutionNote?: string;
+    description: string;
+    category: string;
+    priority?: string;
+    flatNumber: bigint;
 }
 export interface Expenditure {
     month: string;
@@ -66,6 +73,7 @@ export interface backendInterface {
     getAllMaintenanceRecords(month: string, year: bigint): Promise<Array<MaintenanceRecord>>;
     getAllNotices(): Promise<Array<Notice>>;
     getAllVisitorRequests(): Promise<Array<VisitorRequest>>;
+    getCallerNotifications(): Promise<Array<Notification>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getComplaintsByFlat(flatNumber: bigint): Promise<Array<Complaint>>;
@@ -75,11 +83,14 @@ export interface backendInterface {
     getOverdueFlats(month: string, year: bigint): Promise<Array<bigint>>;
     getUpiId(): Promise<string>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
-    getVisitorRequestsForFlat(flatNumber: bigint): Promise<Array<VisitorRequest>>;
+    getVisitorRequestsByFlat(flatNumber: bigint): Promise<Array<VisitorRequest>>;
     getWhatsappNumber(): Promise<string>;
     initializePassword(userId: string, password: string): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     lodgeComplaint(flatNumber: bigint, category: string, description: string, priority: string | null): Promise<bigint>;
+    markAllNotificationsAsRead(): Promise<void>;
+    markNotificationAsRead(notificationId: bigint): Promise<void>;
+    notifyOverdueFlats(month: string, year: bigint): Promise<void>;
     recordExpenditure(month: string, year: bigint, items: Array<[string, bigint]>, totalAmount: bigint, notes: string | null): Promise<void>;
     recordPayment(flatNumber: bigint, month: string, year: bigint, upiRef: string, timestamp: Time): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
@@ -87,5 +98,5 @@ export interface backendInterface {
     setWhatsappNumber(newNumber: string): Promise<void>;
     updateComplaintStatus(complaintId: bigint, newStatus: string, resolutionNote: string | null): Promise<void>;
     updateFlatMobileNumbers(flatNumber: bigint, numbers: Array<string>): Promise<void>;
-    updateVisitorRequestStatus(requestId: bigint, status: string): Promise<void>;
+    updateVisitorRequestStatus(requestId: bigint, newStatus: string): Promise<void>;
 }

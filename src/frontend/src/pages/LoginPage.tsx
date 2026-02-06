@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, loginStatus } = useInternetIdentity();
+  const { login, loginStatus, clear } = useInternetIdentity();
   const [error, setError] = useState<string>('');
 
   const handleLogin = async () => {
@@ -16,7 +14,13 @@ export default function LoginPage() {
     try {
       await login();
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      if (err.message === 'User is already authenticated') {
+        await clear();
+        setTimeout(() => login(), 300);
+      } else {
+        setError(err.message || 'Login failed. Please try again.');
+      }
     }
   };
 
@@ -39,28 +43,6 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="userId" className="text-sm font-medium">User ID</Label>
-              <Input 
-                id="userId" 
-                placeholder="Enter your flat number or role ID" 
-                disabled
-                className="bg-muted/50"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="Enter your password" 
-                disabled
-                className="bg-muted/50"
-              />
-            </div>
-          </div>
-
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -85,7 +67,7 @@ export default function LoginPage() {
 
           <div className="pt-4 border-t">
             <p className="text-xs text-muted-foreground text-center">
-              Default credentials: Flat number as User ID, "Admin1" as password
+              First time? You'll be asked to set up your profile after logging in.
             </p>
           </div>
         </CardContent>

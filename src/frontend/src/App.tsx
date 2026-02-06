@@ -1,6 +1,7 @@
 import { createRouter, RouterProvider, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from './hooks/useQueries';
+import { useGetCallerUserProfile, useSaveCallerUserProfile } from './hooks/useQueries';
+import { useState, useEffect } from 'react';
 import LoginPage from './pages/LoginPage';
 import FlatDashboardPage from './pages/flat/FlatDashboardPage';
 import SecretaryDashboardPage from './pages/secretary/SecretaryDashboardPage';
@@ -23,14 +24,31 @@ import VisitorRequestsPage from './pages/guard/VisitorRequestsPage';
 import VisitorRequestCreatePage from './pages/guard/VisitorRequestCreatePage';
 import VisitorRequestDetailPage from './pages/guard/VisitorRequestDetailPage';
 import FlatVisitorRequestsPage from './pages/flat/VisitorRequestsPage';
+import NotificationsPage from './pages/common/NotificationsPage';
+import PaymentsReportPrintPage from './pages/secretary/PaymentsReportPrintPage';
+import ComplaintsReportPrintPage from './pages/secretary/ComplaintsReportPrintPage';
+import ExpendituresReportPrintPage from './pages/secretary/ExpendituresReportPrintPage';
+import NoticesReportPrintPage from './pages/secretary/NoticesReportPrintPage';
 import AppLayout from './components/layout/AppLayout';
+import ProfileSetupModal from './components/ProfileSetupModal';
 import { Toaster } from '@/components/ui/sonner';
 
 function RootComponent() {
-  const { identity } = useInternetIdentity();
-  const { data: userProfile, isLoading } = useGetCallerUserProfile();
+  const { identity, isInitializing } = useInternetIdentity();
+  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
-  if (isLoading) {
+  const isAuthenticated = !!identity;
+
+  useEffect(() => {
+    if (isAuthenticated && !profileLoading && isFetched && userProfile === null) {
+      setShowProfileSetup(true);
+    } else {
+      setShowProfileSetup(false);
+    }
+  }, [isAuthenticated, profileLoading, isFetched, userProfile]);
+
+  if (isInitializing || (isAuthenticated && profileLoading)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
@@ -41,8 +59,23 @@ function RootComponent() {
     );
   }
 
-  if (!identity || !userProfile) {
+  if (!isAuthenticated) {
     return <LoginPage />;
+  }
+
+  if (showProfileSetup) {
+    return <ProfileSetupModal onComplete={() => setShowProfileSetup(false)} />;
+  }
+
+  if (!userProfile) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <p className="text-muted-foreground">Setting up your profile...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -186,6 +219,36 @@ const flatVisitorRequestsRoute = createRoute({
   component: FlatVisitorRequestsPage,
 });
 
+const notificationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/notifications',
+  component: NotificationsPage,
+});
+
+const paymentsReportPrintRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/payments/print',
+  component: PaymentsReportPrintPage,
+});
+
+const complaintsReportPrintRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/complaints/print',
+  component: ComplaintsReportPrintPage,
+});
+
+const expendituresReportPrintRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/expenditures/print',
+  component: ExpendituresReportPrintPage,
+});
+
+const noticesReportPrintRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/notices/print',
+  component: NoticesReportPrintPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   changePasswordRoute,
@@ -206,9 +269,22 @@ const routeTree = rootRoute.addChildren([
   visitorRequestCreateRoute,
   visitorRequestDetailRoute,
   flatVisitorRequestsRoute,
+  notificationsRoute,
+  paymentsReportPrintRoute,
+  complaintsReportPrintRoute,
+  expendituresReportPrintRoute,
+  noticesReportPrintRoute,
 ]);
 
 const router = createRouter({ routeTree });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Service worker registration failed, continue without it
+    });
+  });
+}
 
 export default function App() {
   return (

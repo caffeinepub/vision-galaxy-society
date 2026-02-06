@@ -1,36 +1,32 @@
-import { useGetCallerUserProfile, useGetVisitorRequestsForFlat, useUpdateVisitorRequestStatus } from '../../hooks/useQueries';
+import { useGetCallerUserProfile, useGetVisitorRequestsByFlat, useUpdateVisitorRequestStatus } from '../../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { DoorOpen, Check, X, Info } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function VisitorRequestsPage() {
+export default function FlatVisitorRequestsPage() {
   const { data: userProfile } = useGetCallerUserProfile();
   const flatNumber = userProfile?.flatNumber || BigInt(0);
   
-  const { data: visitorRequests = [] } = useGetVisitorRequestsForFlat(flatNumber);
-  const updateVisitorRequestStatusMutation = useUpdateVisitorRequestStatus();
-
-  const pendingRequests = visitorRequests.filter(r => r.status === 'Pending');
-  const sortedRequests = [...visitorRequests].sort((a, b) => Number(b.id) - Number(a.id));
+  const { data: requests = [], isLoading } = useGetVisitorRequestsByFlat(flatNumber);
+  const updateStatusMutation = useUpdateVisitorRequestStatus();
 
   const handleAccept = async (requestId: bigint) => {
     try {
-      await updateVisitorRequestStatusMutation.mutateAsync({
+      await updateStatusMutation.mutateAsync({
         requestId,
-        status: 'Accepted',
+        status: 'Approved',
       });
-      toast.success('Visitor request accepted');
+      toast.success('Visitor request approved!');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to accept request');
+      toast.error(error.message || 'Failed to approve request');
     }
   };
 
   const handleDecline = async (requestId: bigint) => {
     try {
-      await updateVisitorRequestStatusMutation.mutateAsync({
+      await updateStatusMutation.mutateAsync({
         requestId,
         status: 'Declined',
       });
@@ -41,90 +37,87 @@ export default function VisitorRequestsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
-      'Pending': 'default',
-      'Accepted': 'outline',
-      'Declined': 'destructive',
-    };
-    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
+    switch (status) {
+      case 'Approved':
+        return <Badge className="bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />Approved</Badge>;
+      case 'Declined':
+        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Declined</Badge>;
+      default:
+        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading visitor requests...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Visitor Requests</h1>
-        <p className="text-muted-foreground mt-1">Approve or decline visitor entries</p>
+        <p className="text-muted-foreground mt-1">Approve or decline visitor entry requests</p>
       </div>
 
-      {pendingRequests.length > 0 && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            You have {pendingRequests.length} pending visitor request{pendingRequests.length !== 1 ? 's' : ''} awaiting your response.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Requests</CardTitle>
-          <CardDescription>
-            {sortedRequests.length} visitor request{sortedRequests.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {sortedRequests.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <DoorOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No visitor requests yet</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {sortedRequests.map(request => (
-                <div
-                  key={request.id.toString()}
-                  className="p-4 border rounded-lg"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{request.visitorName}</h4>
-                      <p className="text-sm text-muted-foreground mt-1">{request.purpose}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Contact: {request.mobileNumber}
-                      </p>
-                    </div>
-                    {getStatusBadge(request.status)}
+      {requests.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            No visitor requests for your flat
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {requests.map((request) => (
+            <Card key={request.id.toString()}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>{request.visitorName}</CardTitle>
+                    <CardDescription>{request.purpose}</CardDescription>
                   </div>
-
-                  {request.status === 'Pending' && (
-                    <div className="flex gap-2 mt-3">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAccept(request.id)}
-                        disabled={updateVisitorRequestStatusMutation.isPending}
-                        className="flex-1"
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDecline(request.id)}
-                        disabled={updateVisitorRequestStatusMutation.isPending}
-                        className="flex-1"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Decline
-                      </Button>
-                    </div>
-                  )}
+                  {getStatusBadge(request.status)}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Contact Number:</span>
+                    <span className="font-medium">{request.mobileNumber}</span>
+                  </div>
+                </div>
+
+                {request.status === 'Pending' && (
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => handleAccept(request.id)}
+                      disabled={updateStatusMutation.isPending}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Approve
+                    </Button>
+                    <Button
+                      onClick={() => handleDecline(request.id)}
+                      disabled={updateStatusMutation.isPending}
+                      variant="destructive"
+                      className="flex-1"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Decline
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

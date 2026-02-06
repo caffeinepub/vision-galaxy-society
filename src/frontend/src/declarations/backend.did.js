@@ -45,6 +45,13 @@ export const VisitorRequest = IDL.Record({
   'purpose' : IDL.Text,
   'flatNumber' : IDL.Nat,
 });
+export const Notification = IDL.Record({
+  'id' : IDL.Nat,
+  'recipient' : IDL.Principal,
+  'isRead' : IDL.Bool,
+  'message' : IDL.Text,
+  'timestamp' : Time,
+});
 export const UserProfile = IDL.Record({
   'userType' : IDL.Text,
   'userId' : IDL.Text,
@@ -77,6 +84,7 @@ export const idlService = IDL.Service({
     ),
   'getAllNotices' : IDL.Func([], [IDL.Vec(Notice)], ['query']),
   'getAllVisitorRequests' : IDL.Func([], [IDL.Vec(VisitorRequest)], ['query']),
+  'getCallerNotifications' : IDL.Func([], [IDL.Vec(Notification)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getComplaintsByFlat' : IDL.Func([IDL.Nat], [IDL.Vec(Complaint)], ['query']),
@@ -102,7 +110,7 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
-  'getVisitorRequestsForFlat' : IDL.Func(
+  'getVisitorRequestsByFlat' : IDL.Func(
       [IDL.Nat],
       [IDL.Vec(VisitorRequest)],
       ['query'],
@@ -115,6 +123,9 @@ export const idlService = IDL.Service({
       [IDL.Nat],
       [],
     ),
+  'markAllNotificationsAsRead' : IDL.Func([], [], []),
+  'markNotificationAsRead' : IDL.Func([IDL.Nat], [], []),
+  'notifyOverdueFlats' : IDL.Func([IDL.Text, IDL.Nat], [], []),
   'recordExpenditure' : IDL.Func(
       [
         IDL.Text,
@@ -183,6 +194,13 @@ export const idlFactory = ({ IDL }) => {
     'purpose' : IDL.Text,
     'flatNumber' : IDL.Nat,
   });
+  const Notification = IDL.Record({
+    'id' : IDL.Nat,
+    'recipient' : IDL.Principal,
+    'isRead' : IDL.Bool,
+    'message' : IDL.Text,
+    'timestamp' : Time,
+  });
   const UserProfile = IDL.Record({
     'userType' : IDL.Text,
     'userId' : IDL.Text,
@@ -223,6 +241,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(VisitorRequest)],
         ['query'],
       ),
+    'getCallerNotifications' : IDL.Func([], [IDL.Vec(Notification)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getComplaintsByFlat' : IDL.Func(
@@ -256,7 +275,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
-    'getVisitorRequestsForFlat' : IDL.Func(
+    'getVisitorRequestsByFlat' : IDL.Func(
         [IDL.Nat],
         [IDL.Vec(VisitorRequest)],
         ['query'],
@@ -269,6 +288,9 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Nat],
         [],
       ),
+    'markAllNotificationsAsRead' : IDL.Func([], [], []),
+    'markNotificationAsRead' : IDL.Func([IDL.Nat], [], []),
+    'notifyOverdueFlats' : IDL.Func([IDL.Text, IDL.Nat], [], []),
     'recordExpenditure' : IDL.Func(
         [
           IDL.Text,

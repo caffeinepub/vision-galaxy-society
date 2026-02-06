@@ -82,4 +82,62 @@
         @apply bg-background text-foreground;
         font-feature-settings: "rlig" 1, "calt" 1;
     }
+
+    /* Mobile-friendly tap targets */
+    button, a, [role="button"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Prevent text overflow on small screens */
+    @media (max-width: 640px) {
+        h1 {
+            @apply text-2xl;
+        }
+        h2 {
+            @apply text-xl;
+        }
+    }
+
+    /* Print styles */
+    @media print {
+        body {
+            @apply bg-white text-black;
+        }
+        
+        .print-content {
+            max-width: 100% !important;
+        }
+        
+        /* Hide non-essential elements during print */
+        button, nav, header, footer {
+            display: none !important;
+        }
+        
+        /* Ensure tables fit on page */
+        table {
+            page-break-inside: auto;
+        }
+        
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        
+        /* Better typography for print */
+        body {
+            font-size: 12pt;
+            line-height: 1.5;
+        }
+        
+        h1 {
+            font-size: 24pt;
+            margin-bottom: 12pt;
+        }
+        
+        h2 {
+            font-size: 18pt;
+            margin-bottom: 10pt;
+        }
+    }
 }

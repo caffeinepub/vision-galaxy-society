@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { useGetAllMaintenanceRecords, useGetOverdueFlats } from '../../hooks/useQueries';
+import { useGetOverdueFlats } from '../../hooks/useQueries';
 import { getCurrentMonth, getCurrentYear } from '../../utils/dates';
 import { isOverduePeriod } from '../../utils/overdue';
 import DashboardCard from '../../components/layout/DashboardCard';
@@ -10,11 +10,7 @@ export default function SecretaryDashboardPage() {
   const currentMonth = getCurrentMonth();
   const currentYear = getCurrentYear();
 
-  const { data: maintenanceRecords = [] } = useGetAllMaintenanceRecords(currentMonth, currentYear);
   const { data: overdueFlats = [] } = useGetOverdueFlats(currentMonth, currentYear);
-
-  const submittedCount = maintenanceRecords.filter(r => r.isPaid).length;
-  const pendingCount = 115 - submittedCount;
 
   return (
     <div className="space-y-6">
@@ -26,7 +22,7 @@ export default function SecretaryDashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <DashboardCard
           title="Payments"
-          description={`${submittedCount} paid, ${pendingCount} pending`}
+          description="Review maintenance payments"
           icon={CreditCard}
           action={{
             label: 'Review Payments',

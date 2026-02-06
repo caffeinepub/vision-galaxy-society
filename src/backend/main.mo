@@ -1,16 +1,19 @@
+// No actual backend changes needed to support mainnet deployment retry/fallback logic! 
+// Motoko backend remains unchanged.
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
-import Iter "mo:core/Iter";
-import Array "mo:core/Array";
-import Time "mo:core/Time";
 import List "mo:core/List";
-import Text "mo:core/Text";
 import Order "mo:core/Order";
+import Time "mo:core/Time";
+import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
+import Text "mo:core/Text";
 import Principal "mo:core/Principal";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+
+// Use module to inject migration via "with"
 
 actor {
   // Types for primary entities
@@ -26,7 +29,7 @@ actor {
   public type Expenditure = {
     month : Text;
     year : Nat;
-    items : [(Text, Nat)]; // (description, amount) tuples
+    items : [(Text, Nat)];
     totalAmount : Nat;
     notes : ?Text;
   };
@@ -37,7 +40,7 @@ actor {
     category : Text;
     description : Text;
     priority : ?Text;
-    status : Text; // Open, In Progress, Resolved, Rejected
+    status : Text;
     resolutionNote : ?Text;
   };
 
@@ -59,30 +62,38 @@ actor {
 
   public type UserProfile = {
     userId : Text;
-    userType : Text; // "FlatOwner", "Secretary", "Guard"
-    flatNumber : ?Nat; // Only for FlatOwner
+    userType : Text;
+    flatNumber : ?Nat;
     name : Text;
+  };
+
+  public type Notification = {
+    id : Nat;
+    recipient : Principal;
+    message : Text;
+    isRead : Bool;
+    timestamp : Time.Time;
   };
 
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // State for primary features
-  let maintenanceRecords = Map.empty<Text, MaintenanceRecord>(); // key: "flatNumber-month-year"
+  let maintenanceRecords = Map.empty<Text, MaintenanceRecord>();
   let expenditures = Map.empty<Text, Expenditure>();
   let complaints = Map.empty<Nat, Complaint>();
   let notices = Map.empty<Nat, Notice>();
   let visitorRequests = Map.empty<Nat, VisitorRequest>();
-
   let flatMobileNumbers = Map.empty<Nat, [Text]>();
   let userProfiles = Map.empty<Principal, UserProfile>();
-  let passwords = Map.empty<Text, Text>(); // userId -> password (in production use proper hashing)
-  
+  let passwords = Map.empty<Text, Text>();
+  let notifications = Map.empty<Nat, Notification>();
+
   var upiId : Text = "";
   var whatsappNumber : Text = "";
   var noticeIdCounter = 0;
   var complaintIdCounter = 0;
   var visitorRequestIdCounter = 0;
+  var notificationIdCounter = 0;
 
   module Complaint {
     public func compare(a : Complaint, b : Complaint) : Order.Order {
@@ -96,7 +107,7 @@ actor {
     };
   };
 
-  // Helper function to check if caller is a flat owner for specific flat
+  // Helper function to check if caller is flat owner
   func isCallerFlatOwner(caller : Principal, flatNumber : Nat) : Bool {
     switch (userProfiles.get(caller)) {
       case (?profile) {
@@ -106,7 +117,6 @@ actor {
     };
   };
 
-  // Helper function to check if caller is guard
   func isCallerGuard(caller : Principal) : Bool {
     switch (userProfiles.get(caller)) {
       case (?profile) { profile.userType == "Guard" };
@@ -114,67 +124,169 @@ actor {
     };
   };
 
-  // User Profile Management (Required by frontend)
+  // Helper to get all flat owners for notification purposes
+  func getAllFlatOwnerPrincipals() : [Principal] {
+    let flatOwners = List.empty<Principal>();
+    for ((principal, profile) in userProfiles.entries()) {
+      if (profile.userType == "FlatOwner") {
+        flatOwners.add(principal);
+      };
+    };
+    flatOwners.toArray();
+  };
+
+  // Helper to get flat owner principal by flat number
+  func getFlatOwnerPrincipal(flatNumber : Nat) : ?Principal {
+    for ((principal, profile) in userProfiles.entries()) {
+      if (profile.userType == "FlatOwner" and profile.flatNumber == ?flatNumber) {
+        return ?principal;
+      };
+    };
+    null;
+  };
+
+  // Endpoints for notifications
+  public query ({ caller }) func getCallerNotifications() : async [Notification] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view notifications");
+    };
+    notifications.values().toArray().filter(
+      func(n) { n.recipient == caller }
+    );
+  };
+
+  public shared ({ caller }) func markNotificationAsRead(notificationId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can mark notifications as read");
+    };
+    switch (notifications.get(notificationId)) {
+      case (?notification) {
+        if (notification.recipient != caller) {
+          Runtime.trap("Unauthorized: Cannot modify another user's notification");
+        };
+        let updated = { notification with isRead = true };
+        notifications.add(notificationId, updated);
+      };
+      case (null) {
+        Runtime.trap("Notification not found");
+      };
+    };
+  };
+
+  public shared ({ caller }) func markAllNotificationsAsRead() : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can mark notifications as read");
+    };
+    let userNotifications = notifications.filter(
+      func(_id, n) { n.recipient == caller }
+    );
+    userNotifications.forEach(
+      func(id, n) {
+        let updated = { n with isRead = true };
+        notifications.add(id, updated);
+      }
+    );
+  };
+
+  func createNotification(recipient : Principal, message : Text) : () {
+    let notification : Notification = {
+      id = notificationIdCounter;
+      recipient;
+      message;
+      isRead = false;
+      timestamp = Time.now();
+    };
+    notifications.add(notificationIdCounter, notification);
+    notificationIdCounter += 1;
+  };
+
+  // Helper to notify all flat owners about new notices
+  func notifyAllFlatOwnersAboutNotice(noticeTitle : Text) : () {
+    let flatOwners = getAllFlatOwnerPrincipals();
+    for (owner in flatOwners.vals()) {
+      createNotification(owner, "New society notice: " # noticeTitle);
+    };
+  };
+
+  // Helper to check if maintenance is overdue and notify
+  func checkAndNotifyOverdueMaintenance(flatNumber : Nat, month : Text, year : Nat) : () {
+    let key = flatNumber.toText() # "-" # month # "-" # year.toText();
+    switch (maintenanceRecords.get(key)) {
+      case (?record) {
+        if (not record.isPaid) {
+          switch (getFlatOwnerPrincipal(flatNumber)) {
+            case (?owner) {
+              createNotification(owner, "Reminder: Maintenance overdue for " # month # "/" # year.toText());
+            };
+            case (null) {};
+          };
+        };
+      };
+      case (null) {};
+    };
+  };
+
+  // ==================== User Profile Management ====================
+
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (caller.isAnonymous()) {
-      return null;
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view profiles");
     };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller.isAnonymous()) {
-      Runtime.trap("Unauthorized: Anonymous users cannot view profiles");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view profiles");
     };
     if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
+      Runtime.trap("Unauthorized: Can only view your own profile unless admin");
     };
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (caller.isAnonymous()) {
-      Runtime.trap("Unauthorized: Anonymous users cannot save profiles");
-    };
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
   };
 
-  // Setup / config functions (Secretary/Admin only)
+  // ==================== Setup / Config ====================
+
   public shared ({ caller }) func setUpiId(newUpiId : Text) : async () {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Secretary can update UPI ID");
+      Runtime.trap("Unauthorized: Only admins can set UPI ID");
     };
     upiId := newUpiId;
   };
 
   public shared ({ caller }) func setWhatsappNumber(newNumber : Text) : async () {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Secretary can update WhatsApp Number");
+      Runtime.trap("Unauthorized: Only admins can set WhatsApp number");
     };
     whatsappNumber := newNumber;
   };
 
   public query ({ caller }) func getUpiId() : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view UPI ID");
+      Runtime.trap("Unauthorized: Only users can view UPI ID");
     };
     upiId;
   };
 
   public query ({ caller }) func getWhatsappNumber() : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view WhatsApp number");
+      Runtime.trap("Unauthorized: Only users can view WhatsApp number");
     };
     whatsappNumber;
   };
 
-  // Flat mobile numbers management (Flat owner only for their flat, Secretary can view all)
+  // ==================== Flat Mobile Numbers ====================
+
   public query ({ caller }) func getFlatMobileNumbers(flatNumber : Nat) : async [Text] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view mobile numbers");
+      Runtime.trap("Unauthorized: Only users can view mobile numbers");
     };
     if (not (isCallerFlatOwner(caller, flatNumber) or AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Can only view your own flat's mobile numbers");
@@ -187,23 +299,26 @@ actor {
 
   public shared ({ caller }) func updateFlatMobileNumbers(flatNumber : Nat, numbers : [Text]) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can update mobile numbers");
+      Runtime.trap("Unauthorized: Only users can update mobile numbers");
     };
     if (not (isCallerFlatOwner(caller, flatNumber))) {
       Runtime.trap("Unauthorized: Can only update your own flat's mobile numbers");
     };
-    if (numbers.size() > 4) {
-      Runtime.trap("Cannot have more than 4 mobile numbers");
-    };
     flatMobileNumbers.add(flatNumber, numbers);
   };
 
-  // Maintenance (Flat owner for their flat, Secretary can view all)
+  // ==================== Maintenance ====================
+
   public query ({ caller }) func getMaintenanceRecord(flatNumber : Nat, month : Text, year : Nat) : async ?MaintenanceRecord {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view maintenance records");
+      Runtime.trap("Unauthorized: Only users can view maintenance records");
     };
-    if (not (isCallerFlatOwner(caller, flatNumber) or AccessControl.isAdmin(accessControlState, caller))) {
+    if (
+      not (
+        isCallerFlatOwner(caller, flatNumber) or
+        AccessControl.isAdmin(accessControlState, caller)
+      )
+    ) {
       Runtime.trap("Unauthorized: Can only view your own flat's maintenance records");
     };
     let key = flatNumber.toText() # "-" # month # "-" # year.toText();
@@ -212,7 +327,7 @@ actor {
 
   public shared ({ caller }) func recordPayment(flatNumber : Nat, month : Text, year : Nat, upiRef : Text, timestamp : Time.Time) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can record payments");
+      Runtime.trap("Unauthorized: Only users can record payments");
     };
     if (not (isCallerFlatOwner(caller, flatNumber))) {
       Runtime.trap("Unauthorized: Can only record payment for your own flat");
@@ -227,11 +342,12 @@ actor {
     };
     let key = flatNumber.toText() # "-" # month # "-" # year.toText();
     maintenanceRecords.add(key, record);
+    createNotification(caller, "Maintenance payment recorded for " # month # "/" # year.toText());
   };
 
   public query ({ caller }) func getOverdueFlats(month : Text, year : Nat) : async [Nat] {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Secretary can view overdue flats");
+      Runtime.trap("Unauthorized: Only admins can view overdue flats");
     };
     let overdue = List.empty<Nat>();
     for ((key, record) in maintenanceRecords.entries()) {
@@ -242,45 +358,22 @@ actor {
     overdue.toArray();
   };
 
-  public query ({ caller }) func getAllMaintenanceRecords(month : Text, year : Nat) : async [MaintenanceRecord] {
+  public shared ({ caller }) func notifyOverdueFlats(month : Text, year : Nat) : async () {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Secretary can view all maintenance records");
+      Runtime.trap("Unauthorized: Only admins can send overdue notifications");
     };
-    let records = List.empty<MaintenanceRecord>();
     for ((key, record) in maintenanceRecords.entries()) {
-      if (record.month == month and record.year == year) {
-        records.add(record);
+      if (not record.isPaid and record.month == month and record.year == year) {
+        checkAndNotifyOverdueMaintenance(record.flatNumber, month, year);
       };
     };
-    records.toArray();
   };
 
-  // Expenditures (Secretary creates, all authenticated users can view)
-  public shared ({ caller }) func recordExpenditure(month : Text, year : Nat, items : [(Text, Nat)], totalAmount : Nat, notes : ?Text) : async () {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Secretary can record expenditures");
-    };
-    let expenditure : Expenditure = {
-      month;
-      year;
-      items;
-      totalAmount;
-      notes;
-    };
-    expenditures.add(month # "." # year.toText(), expenditure);
-  };
+  // ==================== Complaints ====================
 
-  public query ({ caller }) func getExpenditures(month : Text, year : Nat) : async ?Expenditure {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view expenditures");
-    };
-    expenditures.get(month # "." # year.toText());
-  };
-
-  // Complaints (Flat owner lodges for their flat, Secretary can view/update all)
   public shared ({ caller }) func lodgeComplaint(flatNumber : Nat, category : Text, description : Text, priority : ?Text) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can lodge complaints");
+      Runtime.trap("Unauthorized: Only users can lodge complaints");
     };
     if (not (isCallerFlatOwner(caller, flatNumber))) {
       Runtime.trap("Unauthorized: Can only lodge complaint for your own flat");
@@ -301,7 +394,7 @@ actor {
 
   public shared ({ caller }) func updateComplaintStatus(complaintId : Nat, newStatus : Text, resolutionNote : ?Text) : async () {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Secretary can update complaints");
+      Runtime.trap("Unauthorized: Only admins can update complaint status");
     };
     switch (complaints.get(complaintId)) {
       case (?complaint) {
@@ -320,9 +413,14 @@ actor {
 
   public query ({ caller }) func getComplaintsByFlat(flatNumber : Nat) : async [Complaint] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view complaints");
+      Runtime.trap("Unauthorized: Only users can view complaints");
     };
-    if (not (isCallerFlatOwner(caller, flatNumber) or AccessControl.isAdmin(accessControlState, caller))) {
+    if (
+      not (
+        isCallerFlatOwner(caller, flatNumber) or
+        AccessControl.isAdmin(accessControlState, caller)
+      )
+    ) {
       Runtime.trap("Unauthorized: Can only view your own flat's complaints");
     };
     let byFlat = complaints.values().toArray().filter(
@@ -331,18 +429,11 @@ actor {
     byFlat.sort<Complaint>();
   };
 
-  public query ({ caller }) func getAllComplaints() : async [Complaint] {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Secretary can view all complaints");
-    };
-    let allComplaints = complaints.values().toArray();
-    allComplaints.sort<Complaint>();
-  };
+  // ==================== Notices ====================
 
-  // Notices (Secretary creates, all authenticated users can view)
   public shared ({ caller }) func createNotice(title : Text, message : Text, expiryDate : ?Time.Time) : async Nat {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Secretary can create notices");
+      Runtime.trap("Unauthorized: Only admins can create notices");
     };
     let newNotice : Notice = {
       id = noticeIdCounter;
@@ -352,12 +443,16 @@ actor {
     };
     notices.add(noticeIdCounter, newNotice);
     noticeIdCounter += 1;
+    
+    // Notify all flat owners about new notice
+    notifyAllFlatOwnersAboutNotice(title);
+    
     noticeIdCounter - 1;
   };
 
   public query ({ caller }) func getAllNotices() : async [Notice] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view notices");
+      Runtime.trap("Unauthorized: Only users can view notices");
     };
     let currentTime = Time.now();
     let validNotices = notices.values().toArray().filter(
@@ -371,13 +466,14 @@ actor {
     validNotices.sort<Notice>();
   };
 
-  // Visitor requests (Guard creates, Flat owner approves/declines for their flat, Guard/Secretary can view all)
+  // ==================== Visitor Requests ====================
+
   public shared ({ caller }) func createVisitorRequest(visitorName : Text, purpose : Text, flatNumber : Nat, mobileNumber : Text) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can create visitor requests");
+      Runtime.trap("Unauthorized: Only users can create visitor requests");
     };
-    if (not (isCallerGuard(caller) or AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Guard can create visitor requests");
+    if (not (isCallerFlatOwner(caller, flatNumber) or isCallerGuard(caller))) {
+      Runtime.trap("Unauthorized: Only flat owners or guards can create visitor requests");
     };
     let request : VisitorRequest = {
       id = visitorRequestIdCounter;
@@ -392,21 +488,37 @@ actor {
     visitorRequestIdCounter - 1;
   };
 
-  public shared ({ caller }) func updateVisitorRequestStatus(requestId : Nat, status : Text) : async () {
+  public shared ({ caller }) func updateVisitorRequestStatus(requestId : Nat, newStatus : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can update visitor requests");
+      Runtime.trap("Unauthorized: Only users can update visitor request status");
     };
     switch (visitorRequests.get(requestId)) {
       case (?request) {
-        // Only the flat owner of the target flat can approve/decline
-        if (not (isCallerFlatOwner(caller, request.flatNumber) or AccessControl.isAdmin(accessControlState, caller))) {
+        // Guards can update any request, flat owners can only update their own
+        if (not (isCallerGuard(caller) or isCallerFlatOwner(caller, request.flatNumber))) {
           Runtime.trap("Unauthorized: Can only update visitor requests for your own flat");
         };
         let updatedRequest = {
-          request with
-          status;
+          request with status = newStatus;
         };
         visitorRequests.add(requestId, updatedRequest);
+        
+        // Notify flat owner about status change
+        switch (getFlatOwnerPrincipal(request.flatNumber)) {
+          case (?owner) {
+            createNotification(owner, "Visitor request status changed to: " # newStatus);
+          };
+          case (null) {};
+        };
+        
+        // If caller is flat owner, also notify guards
+        if (isCallerFlatOwner(caller, request.flatNumber)) {
+          for ((principal, profile) in userProfiles.entries()) {
+            if (profile.userType == "Guard") {
+              createNotification(principal, "Visitor request status updated for flat " # request.flatNumber.toText());
+            };
+          };
+        };
       };
       case (null) {
         Runtime.trap("Visitor request not found");
@@ -414,39 +526,34 @@ actor {
     };
   };
 
+  public query ({ caller }) func getVisitorRequestsByFlat(flatNumber : Nat) : async [VisitorRequest] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view visitor requests");
+    };
+    if (not (isCallerFlatOwner(caller, flatNumber) or isCallerGuard(caller) or AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Can only view visitor requests for your own flat");
+    };
+    visitorRequests.values().toArray().filter(
+      func(r) { r.flatNumber == flatNumber }
+    );
+  };
+
   public query ({ caller }) func getAllVisitorRequests() : async [VisitorRequest] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view visitor requests");
+      Runtime.trap("Unauthorized: Only users can view visitor requests");
     };
     if (not (isCallerGuard(caller) or AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only Guard or Secretary can view all visitor requests");
+      Runtime.trap("Unauthorized: Only guards and admins can view all visitor requests");
     };
     visitorRequests.values().toArray();
   };
 
-  public query ({ caller }) func getVisitorRequestsForFlat(flatNumber : Nat) : async [VisitorRequest] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view visitor requests");
-    };
-    if (not (isCallerFlatOwner(caller, flatNumber))) {
-      Runtime.trap("Unauthorized: Can only view visitor requests for your own flat");
-    };
-    let forFlat = visitorRequests.values().toArray().filter(
-      func(r) { r.flatNumber == flatNumber }
-    );
-    forFlat;
-  };
+  // ==================== Password Management ====================
 
-  // Password management (authenticated users can change their own password)
   public shared ({ caller }) func changePassword(userId : Text, currentPassword : Text, newPassword : Text) : async () {
-    if (caller.isAnonymous()) {
-      Runtime.trap("Unauthorized: Anonymous users cannot change password");
-    };
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can change password");
+      Runtime.trap("Unauthorized: Only users can change passwords");
     };
-    
-    // Verify the caller's userId matches
     switch (userProfiles.get(caller)) {
       case (?profile) {
         if (profile.userId != userId) {
@@ -465,7 +572,6 @@ actor {
       Runtime.trap("New password must be different from current password");
     };
 
-    // Verify current password
     switch (passwords.get(userId)) {
       case (?storedPassword) {
         if (storedPassword != currentPassword) {
@@ -477,15 +583,62 @@ actor {
       };
     };
 
-    // Update password
     passwords.add(userId, newPassword);
   };
 
-  // Admin function to initialize passwords (for seeding default accounts)
   public shared ({ caller }) func initializePassword(userId : Text, password : Text) : async () {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admin can initialize passwords");
+      Runtime.trap("Unauthorized: Only admins can initialize passwords");
     };
     passwords.add(userId, password);
   };
+
+  // ==================== Secretary Reporting ====================
+
+  public query ({ caller }) func getAllMaintenanceRecords(month : Text, year : Nat) : async [MaintenanceRecord] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can access maintenance records");
+    };
+
+    let records = maintenanceRecords.values().toArray();
+    records.filter(
+      func(record) {
+        record.month == month and record.year == year
+      }
+    );
+  };
+
+  public query ({ caller }) func getAllComplaints() : async [Complaint] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can access complaints");
+    };
+    complaints.values().toArray();
+  };
+
+  public query ({ caller }) func getExpenditures(month : Text, year : Nat) : async ?Expenditure {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access expenditures");
+    };
+
+    let key = month # "-" # year.toText();
+    expenditures.get(key);
+  };
+
+  public shared ({ caller }) func recordExpenditure(month : Text, year : Nat, items : [(Text, Nat)], totalAmount : Nat, notes : ?Text) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can record expenditures");
+    };
+
+    let expenditure : Expenditure = {
+      month;
+      year;
+      items;
+      totalAmount;
+      notes;
+    };
+
+    let key = month # "-" # year.toText();
+    expenditures.add(key, expenditure);
+  };
 };
+

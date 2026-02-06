@@ -1,0 +1,26 @@
+{
+  "name": "Vision Galaxy Society",
+  "short_name": "Vision Galaxy",
+  "description": "Society Management System for Vision Galaxy Society",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/generated/vision-galaxy-logo.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/vision-galaxy-logo.dim_512x512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": []
+}

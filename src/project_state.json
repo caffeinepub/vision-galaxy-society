@@ -1,189 +1,176 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "Build an easy-to-use society management application named \"Vision Galaxy Society\" with role-based logins (flat owners, secretary, guard), UPI-based maintenance collection, notices/reminders, expenditure sharing, complaints tracking, and WhatsApp-based visitor approval workflow.",
+  "projectStateVersion": 25,
+  "summary": "ICP (Internet Computer) full-stack application template for “Vision Galaxy Society” with a Motoko backend (RBAC) and React+Vite+Tailwind (shadcn/ui) frontend including Internet Identity authentication, multi-role dashboards/CRUD pages, build/deploy tooling and generated brand assets; now includes installable PWA mobile delivery plus an in-app notifications center, while push notifications/APK remain future work.",
   "existing_features": [
     {
-      "id": "feature-create-a-simple-role-based-authentication-system-for-the-app-vision-galaxy-society-with-three-user-types-flat-owner-secretary-and-guard-flat-owner-accounts-must-exist-for-flat-numbers-1-23-with-userid-equal-to-the-flat-number-e-g-1-2-23-and-default-password-exactly-admin1-secretary-and-guard-logins-must-also-exist-provide-login-ids-in-the-ui-and-seed-them-in-backend",
-      "title": "Create a simple role-based authentication system for the app “Vision Galaxy Society” with three user types: Flat Owner, Secretary, and Guard. Flat Owner accounts must exist for flat numbers 1–23 with userId equal to the flat number (e.g., \"1\", \"2\", … \"23\") and default password exactly \"Admin1\". Secretary and Guard logins must also exist (provide login IDs in the UI and seed them in backend).",
+      "id": "IF-1",
+      "title": "Motoko backend canister scaffold",
+      "synonyms": [
+        "backend canister",
+        "Motoko core"
+      ],
+      "description": "Backend canister project wired into build/deploy pipeline, with main entrypoint and supporting modules.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-2",
+      "title": "Role-based authorization & access control",
+      "synonyms": [
+        "authorization mixin",
+        "RBAC"
+      ],
+      "description": "Authorization modules added (MixinAuthorization, access-control) to enforce permissions and role-scoped actions.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-3",
+      "title": "Internet Identity authentication integration (frontend)",
+      "synonyms": [
+        "II login",
+        "auth"
+      ],
+      "description": "Frontend hooks and actor integration for Internet Identity login and authenticated canister calls.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-4",
+      "title": "React+Vite+Tailwind frontend scaffold with shadcn/ui component library",
+      "synonyms": [
+        "UI kit",
+        "shadcn"
+      ],
+      "description": "Frontend app scaffolded with Tailwind and a large set of shadcn/ui components and supporting configs (eslint, tsconfig, postcss, vite).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-5",
+      "title": "Multi-role application pages and routing",
+      "synonyms": [
+        "pages"
+      ],
+      "description": "Implemented pages for resident/flat, guard, and secretary roles including dashboards and operational pages (notices, complaints, expenditures, visitors, payments, overdue, settings, profile).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-6",
+      "title": "Build template and deployment tooling",
+      "synonyms": [
+        "Dockerfile",
+        "deploy.sh",
+        "icp.yaml"
+      ],
+      "description": "Added build-template workspace including Dockerfile, deployment scripts/config, pnpm workspace, and image processing scripts.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-7",
+      "title": "Generated brand assets",
+      "synonyms": [
+        "generated images",
+        "vision assets"
+      ],
+      "description": "Generated and included branded background and logo images under frontend/public/assets/generated.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-8",
+      "title": "Progressive Web App (PWA) support (installable)",
+      "synonyms": [
+        "web app manifest",
+        "service worker",
+        "Add to Home Screen"
+      ],
+      "description": "Frontend is now installable as a PWA via manifest.webmanifest and service worker integration, with a supporting install UX hook (usePwaInstall) for mobile-friendly delivery.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-in-app-password-change-for-any-logged-in-user-flat-owner-secretary-guard-require-the-user-to-enter-current-password-and-new-password-update-stored-credentials-so-the-new-password-works-and-the-old-one-no-longer-works",
-      "title": "Add in-app password change for any logged-in user (Flat Owner / Secretary / Guard). Require the user to enter current password and new password; update stored credentials so the new password works and the old one no longer works.",
+      "id": "IF-9",
+      "title": "In-app notifications center (non-push)",
+      "synonyms": [
+        "notifications page",
+        "activity feed"
+      ],
+      "description": "Added an in-app notifications experience surfaced via a dedicated Notifications page, covering key events such as overdue reminders, new notices, and visitor request status changes (non-push).",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-maintenance-contribution-tracking-per-month-and-per-flat-with-an-in-app-upi-payment-initiation-flow-and-secretary-side-visibility-users-must-be-able-to-1-view-current-month-due-status-2-initiate-upi-payment-using-a-upi-deep-link-upi-pay-generated-from-configured-upi-id-and-amount-and-3-record-the-payment-as-submitted-by-entering-a-upi-transaction-reference-utr-and-payment-date-time-secretary-must-be-able-to-view-all-flats-payment-statuses-and-recorded-references",
-      "title": "Implement maintenance contribution tracking per month and per flat, with an in-app UPI payment initiation flow and secretary-side visibility. Users must be able to: (1) view current month due status, (2) initiate UPI payment using a UPI deep link (upi://pay) generated from configured UPI ID and amount, and (3) record the payment as submitted by entering a UPI transaction reference (UTR) and payment date/time. Secretary must be able to view all flats’ payment statuses and recorded references.",
+      "id": "IF-10",
+      "title": "End-to-end Internet Identity auth flow & gating",
+      "synonyms": [
+        "login/logout flow",
+        "auth gate",
+        "session handling"
+      ],
+      "description": "Completed end-to-end Internet Identity integration: login page triggers II, authenticated identity gates app routes, and logout clears identity/cached state without modifying immutable hook files.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-automatic-in-app-overdue-reminder-notices-for-maintenance-if-payment-is-not-completed-by-the-6th-of-the-month-the-reminder-must-appear-to-the-flat-owner-as-an-in-app-notice-and-also-be-visible-to-the-secretary-as-an-overdue-list-notice-view",
-      "title": "Add automatic in-app overdue reminder notices for maintenance if payment is not completed by the 6th of the month. The reminder must appear to the Flat Owner as an in-app notice and also be visible to the Secretary as an overdue list/notice view.",
+      "id": "feature-update-the-ic-mainnet-deployment-helper-tooling-to-support-an-explicit-retry-mode-for-transient-deployment-failures-including-the-known-calm-permanent-canister-reservation-failed-case-so-an-operator-can-run-one-command-that-retries-dfx-deploy-network-ic-multiple-times-with-configurable-delay-and-clear-console-guidance",
+      "title": "Update the IC mainnet deployment helper tooling to support an explicit retry mode for transient deployment failures (including the known \"CaLM permanent canister reservation failed\" case), so an operator can run one command that retries `dfx deploy --network ic` multiple times with configurable delay and clear console guidance.",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-allow-the-secretary-to-upload-enter-monthly-expenditure-details-that-can-be-viewed-by-all-flat-owners-expenditures-must-support-month-selection-line-items-description-amount-total-calculation-and-an-optional-notes-field",
-      "title": "Allow the Secretary to upload (enter) monthly expenditure details that can be viewed by all Flat Owners. Expenditures must support month selection, line items (description + amount), total calculation, and an optional notes field.",
+      "id": "feature-add-a-pre-deployment-cycles-readiness-check-to-the-deployment-helper-flow-so-operators-are-guided-to-verify-cycles-wallet-availability-before-attempting-ic-mainnet-deployment-with-clear-english-only-instructions-and-commands-to-run-when-cycles-are-missing-or-not-configured",
+      "title": "Add a pre-deployment cycles readiness check to the deployment helper flow so operators are guided to verify cycles/wallet availability before attempting IC mainnet deployment, with clear English-only instructions and commands to run when cycles are missing or not configured.",
       "reqIds": [
         "REQ-5"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-add-secretary-admin-configuration-screens-to-set-1-the-upi-id-that-receives-maintenance-payments-and-2-the-whatsapp-number-from-which-visitor-approval-requests-are-sent-store-these-values-in-backend-and-use-them-when-generating-upi-deep-links-and-whatsapp-message-links",
-      "title": "Add secretary-admin configuration screens to set: (1) the UPI ID that receives maintenance payments, and (2) the WhatsApp number from which visitor approval requests are sent. Store these values in backend and use them when generating UPI deep links and WhatsApp message links.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-for-each-flat-owner-provide-a-profile-screen-to-manage-up-to-4-mobile-numbers-for-receiving-approval-related-communication-enforce-a-maximum-of-4-numbers-and-allow-add-edit-remove",
-      "title": "For each Flat Owner, provide a profile screen to manage up to 4 mobile numbers for receiving approval-related communication. Enforce a maximum of 4 numbers and allow add/edit/remove.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-a-complaints-module-flat-owners-can-lodge-complaints-category-description-optional-priority-view-their-complaint-list-and-see-current-status-secretary-can-view-all-complaints-update-status-e-g-open-in-progress-resolved-rejected-and-add-a-resolution-note-that-is-visible-to-the-complaining-user",
-      "title": "Implement a complaints module: Flat Owners can lodge complaints (category, description, optional priority), view their complaint list, and see current status. Secretary can view all complaints, update status (e.g., Open/In Progress/Resolved/Rejected), and add a resolution note that is visible to the complaining user.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-in-app-notices-announcements-feature-where-the-secretary-can-create-notices-title-message-optional-expiry-date-and-all-flat-owners-and-guard-can-view-them-in-a-notices-feed",
-      "title": "Add an in-app notices/announcements feature where the Secretary can create notices (title, message, optional expiry date), and all Flat Owners (and Guard) can view them in a notices feed.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-a-guard-visitor-request-workflow-using-whatsapp-deep-links-guard-can-create-a-visitor-request-for-a-target-flat-1-23-with-visitor-name-and-purpose-the-app-must-generate-a-whatsapp-send-message-deep-link-pre-filled-to-the-flat-s-selected-mobile-number-or-allow-choosing-among-the-flat-s-up-to-4-numbers-the-flat-owner-must-be-able-to-accept-decline-inside-the-app-the-decision-must-be-visible-on-the-guard-s-request-list-detail-screen",
-      "title": "Implement a Guard visitor request workflow using WhatsApp deep links: Guard can create a visitor request for a target flat (1–23) with visitor name and purpose. The app must generate a WhatsApp “send message” deep link pre-filled to the flat’s selected mobile number (or allow choosing among the flat’s up to 4 numbers). The Flat Owner must be able to accept/decline inside the app; the decision must be visible on the Guard’s request list/detail screen.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-an-easy-format-ui-with-role-based-dashboards-and-straightforward-navigation-flat-owner-maintenance-notices-expenditures-complaints-visitor-requests-profile-secretary-payments-overdue-expenditures-complaints-notices-settings-guard-visitor-requests-settings-read-only-where-applicable",
-      "title": "Create an “easy format” UI with role-based dashboards and straightforward navigation: Flat Owner (Maintenance, Notices, Expenditures, Complaints, Visitor Requests, Profile), Secretary (Payments, Overdue, Expenditures, Complaints, Notices, Settings), Guard (Visitor Requests, Settings read-only where applicable).",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-define-and-apply-a-coherent-visual-theme-for-vision-galaxy-society-distinct-color-palette-not-based-on-blue-purple-consistent-typography-spacing-and-card-layout-system-across-all-screens",
-      "title": "Define and apply a coherent visual theme for “Vision Galaxy Society” (distinct color palette not based on blue/purple, consistent typography, spacing, and card/layout system) across all screens.",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Create role-based authentication for flat owners (flats 1–23 across 5 floors), secretary, and guard; flat owner userId = flat number and default password = \"Admin1\"",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Allow users to change their password within the app",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Collect maintenance contributions via UPI in-app and show received payments to the secretary",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Send notice/reminder if maintenance payment is not done by the 6th of the month",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Secretary can upload monthly expenditure details and all users can view them",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Admin/secretary can configure the UPI ID to receive payments and the WhatsApp number from which requests are sent",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "Users can add up to 4 mobile numbers to receive request approvals",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Complaint lodging for users; secretary can view complaints and update status; users can view complaint status",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-9",
-      "summary": "Secretary can send notices/announcements to all users in the application",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-10",
-      "summary": "Guard can send visitor entry requests to flat owners via WhatsApp; accept/decline result is shown in guard app",
-      "reqIds": [],
-      "status": "pending"
-    }
+  "new_feature_requests": [],
+  "architecturalNotes": [
+    "Project structured as an Internet Computer (ICP) full-stack app with a Motoko backend canister and a React (Vite) frontend.",
+    "Authentication uses Internet Identity on the frontend with an actor-based canister client.",
+    "Authorization enforced via backend access-control modules (role-based authorization).",
+    "Frontend uses TailwindCSS and shadcn/ui component set; repository includes a reusable build-template workspace and deployment scripts/config.",
+    "Add a mobile delivery strategy (e.g., PWA and/or Android APK wrapper) to enable access on phones.",
+    "Mobile delivery now supports an installable PWA via web manifest + service worker, with frontend install prompting/UX handled by a dedicated hook.",
+    "In-app (non-push) notifications are presented via a dedicated Notifications page/experience tied into the existing role-based UI."
   ],
-  "architecturalNotes": [],
-  "knownIssues": [],
-  "isFixRequest": false,
-  "imageRequirements": "## Required Images\n- Society logo mark with text “Vision Galaxy Society” in a clean emblem style (vision-galaxy-logo.dim_512x512.png)\n- Subtle abstract background pattern suitable for dashboards (vision-galaxy-bg.dim_1920x1080.png)",
+  "knownIssues": [
+    "Mainnet (production) deployment failed with error: \"CaLM permanent canister reservation failed\".",
+    "Subsequent attempt to complete production deployment failed generically: \"Deployment failed\" (no additional error details provided)."
+  ],
+  "isFixRequest": true,
   "generatedImages": [
     {
-      "filename": "vision-galaxy-logo.dim_512x512.png",
-      "description": "Society logo mark with text “Vision Galaxy Society” in a clean emblem style",
-      "targetWidth": 512,
-      "targetHeight": 512
-    },
-    {
-      "filename": "vision-galaxy-bg.dim_1920x1080.png",
-      "description": "Subtle abstract background pattern suitable for dashboards",
+      "filename": "frontend/public/assets/generated/vision-galaxy-bg.dim_1920x1080.png",
+      "description": "Generated background image asset (dimmed).",
       "targetWidth": 1920,
       "targetHeight": 1080
+    },
+    {
+      "filename": "frontend/public/assets/generated/vision-galaxy-logo.dim_512x512.png",
+      "description": "Generated logo image asset (dimmed).",
+      "targetWidth": 512,
+      "targetHeight": 512
     }
   ],
   "gameProjectType": "none",
   "projectName": "Vision Galaxy Society",
   "clarification_mode": "instant",
   "clarification_rounds": 0,
-  "requiresBackendChanges": true,
+  "requiresBackendChanges": false,
   "requiresFrontendChanges": true
 }
