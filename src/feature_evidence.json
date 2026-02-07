@@ -2,11 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-secretary-settings-page-so-that-editing-any-of-the-configuration-fields-monthly-maintenance-amount-society-upi-id-guard-mobile-number-correctly-marks-the-form-as-changed-and-allows-saving-instead-of-incorrectly-showing-behaving-like-there-is-no-changes-to-save",
-      "featureTitle": "Fix the secretary Settings page so that editing any of the configuration fields (Monthly Maintenance Amount, Society UPI ID, Guard Mobile Number) correctly marks the form as changed and allows saving, instead of incorrectly showing/behaving like there is “No changes to save”.",
+      "featureId": "feature-when-an-ic-mainnet-deploy-build-fails-with-a-generic-failure-e-g-the-platform-reports-application-creation-unsuccessful-provide-a-clear-actionable-troubleshooting-path-by-improving-deploy-output-and-documentation-so-a-developer-can-immediately-identify-the-likely-cause-identity-wallet-cycles-calm-reservation-dfx-issues-and-the-next-command-s-to-run",
+      "featureTitle": "When an IC mainnet deploy/build fails with a generic failure (e.g., the platform reports \"Application creation unsuccessful\"), provide a clear, actionable troubleshooting path by improving deploy output and documentation so a developer can immediately identify the likely cause (identity/wallet/cycles/CaLM reservation/dfx issues) and the next command(s) to run.",
       "files": [
-        "frontend/src/pages/secretary/SettingsPage.tsx",
-        "frontend/src/utils/settingsValidation.ts"
+        "frontend/deploy/ic-deploy-with-retry.sh",
+        "frontend/docs/deployment-troubleshooting.md"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,10 +23,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-secretary-settings-page-baseline-state-is-not-stale-across-settings-refetches-or-identity-actor-changes-so-the-dirty-check-reflects-the-currently-loaded-backend-settings-for-the-current-logged-in-principal",
-      "featureTitle": "Ensure the secretary Settings page baseline state is not stale across settings refetches or identity/actor changes, so the dirty-check reflects the currently loaded backend settings for the current logged-in principal.",
+      "featureId": "feature-enhance-the-existing-deployment-retry-workflow-to-reduce-repeated-failures-by-automatically-recommending-and-or-invoking-the-canister-pre-creation-step-when-the-deployment-output-indicates-canister-reservation-or-creation-problems-including-but-not-limited-to-calm-reservation-failures",
+      "featureTitle": "Enhance the existing deployment retry workflow to reduce repeated failures by automatically recommending and/or invoking the canister pre-creation step when the deployment output indicates canister reservation or creation problems (including, but not limited to, CaLM reservation failures).",
       "files": [
-        "frontend/src/pages/secretary/SettingsPage.tsx"
+        "frontend/deploy/ic-deploy-with-retry.sh",
+        "frontend/docs/deployment-troubleshooting.md"
       ],
       "components": [
         "authorization@4.0.0",

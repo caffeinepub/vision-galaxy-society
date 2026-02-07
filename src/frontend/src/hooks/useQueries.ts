@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
+import { useActorContext } from './useActorContext';
 import type { UserProfile, MaintenanceRecord, Complaint, Notice, VisitorRequest, Notification, Expenditure, SecretarySettings, FlatPaymentStatus } from '../backend';
 
 export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
@@ -23,7 +23,6 @@ export function useGetCallerUserProfile() {
     retry: false,
   });
 
-  // Return custom state that properly reflects actor dependency
   return {
     ...query,
     isLoading: actorFetching || query.isLoading,
@@ -32,7 +31,7 @@ export function useGetCallerUserProfile() {
 }
 
 export function useSaveCallerUserProfile() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -42,16 +41,14 @@ export function useSaveCallerUserProfile() {
       return profile;
     },
     onSuccess: (savedProfile) => {
-      // Immediately set the query data to prevent modal flash
       queryClient.setQueryData(['currentUserProfile'], savedProfile);
-      // Then invalidate to ensure consistency with backend
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
 }
 
 export function useChangePassword() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
 
   return useMutation({
     mutationFn: async ({ userId, currentPassword, newPassword }: { userId: string; currentPassword: string; newPassword: string }) => {
@@ -62,7 +59,7 @@ export function useChangePassword() {
 }
 
 export function useGetMaintenanceRecord(flatNumber: bigint, month: string, year: bigint) {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<MaintenanceRecord | null>({
     queryKey: ['maintenanceRecord', flatNumber.toString(), month, year.toString()],
@@ -70,12 +67,12 @@ export function useGetMaintenanceRecord(flatNumber: bigint, month: string, year:
       if (!actor) return null;
       return actor.getMaintenanceRecord(flatNumber, month, year);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useRecordPayment() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -93,7 +90,7 @@ export function useRecordPayment() {
 }
 
 export function useGetOverdueFlats(month: string, year: bigint) {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<bigint[]>({
     queryKey: ['overdueFlats', month, year.toString()],
@@ -101,12 +98,12 @@ export function useGetOverdueFlats(month: string, year: bigint) {
       if (!actor) return [];
       return actor.getOverdueFlats(month, year);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetAllMaintenanceRecords(month: string, year: bigint) {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<MaintenanceRecord[]>({
     queryKey: ['allMaintenanceRecords', month, year.toString()],
@@ -114,12 +111,12 @@ export function useGetAllMaintenanceRecords(month: string, year: bigint) {
       if (!actor) return [];
       return actor.getAllMaintenanceRecords(month, year);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetMaintenanceStatusForAllFlats(month: string, year: bigint) {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<FlatPaymentStatus[]>({
     queryKey: ['maintenanceStatusForAllFlats', month, year.toString()],
@@ -127,12 +124,12 @@ export function useGetMaintenanceStatusForAllFlats(month: string, year: bigint) 
       if (!actor) return [];
       return actor.getMaintenanceStatusForAllFlats(month, year);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetUpiId() {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<string>({
     queryKey: ['upiId'],
@@ -140,12 +137,12 @@ export function useGetUpiId() {
       if (!actor) return '';
       return actor.getUpiId();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useSetUpiId() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -161,7 +158,7 @@ export function useSetUpiId() {
 }
 
 export function useGetWhatsappNumber() {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<string>({
     queryKey: ['whatsappNumber'],
@@ -169,12 +166,12 @@ export function useGetWhatsappNumber() {
       if (!actor) return '';
       return actor.getWhatsappNumber();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useSetWhatsappNumber() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -190,7 +187,7 @@ export function useSetWhatsappNumber() {
 }
 
 export function useGetSecretarySettings() {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<SecretarySettings>({
     queryKey: ['secretarySettings'],
@@ -198,12 +195,13 @@ export function useGetSecretarySettings() {
       if (!actor) throw new Error('Actor not available');
       return actor.getSecretarySettings();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
+    retry: 1,
   });
 }
 
 export function useUpdateSecretarySettings() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -221,7 +219,7 @@ export function useUpdateSecretarySettings() {
 }
 
 export function useGetMaintenanceAmount() {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<bigint>({
     queryKey: ['maintenanceAmount'],
@@ -229,12 +227,12 @@ export function useGetMaintenanceAmount() {
       if (!actor) return BigInt(0);
       return actor.getMaintenanceAmount();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetFlatMobileNumbers(flatNumber: bigint) {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<string[]>({
     queryKey: ['flatMobileNumbers', flatNumber.toString()],
@@ -242,12 +240,12 @@ export function useGetFlatMobileNumbers(flatNumber: bigint) {
       if (!actor) return [];
       return actor.getFlatMobileNumbers(flatNumber);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useUpdateFlatMobileNumbers() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -262,7 +260,7 @@ export function useUpdateFlatMobileNumbers() {
 }
 
 export function useLodgeComplaint() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -278,7 +276,7 @@ export function useLodgeComplaint() {
 }
 
 export function useGetComplaintsByFlat(flatNumber: bigint) {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<Complaint[]>({
     queryKey: ['complaintsByFlat', flatNumber.toString()],
@@ -286,12 +284,12 @@ export function useGetComplaintsByFlat(flatNumber: bigint) {
       if (!actor) return [];
       return actor.getComplaintsByFlat(flatNumber);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetAllComplaints() {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<Complaint[]>({
     queryKey: ['allComplaints'],
@@ -299,12 +297,12 @@ export function useGetAllComplaints() {
       if (!actor) return [];
       return actor.getAllComplaints();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useUpdateComplaintStatus() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -320,7 +318,7 @@ export function useUpdateComplaintStatus() {
 }
 
 export function useCreateNotice() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -336,7 +334,7 @@ export function useCreateNotice() {
 }
 
 export function useGetAllNotices() {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<Notice[]>({
     queryKey: ['allNotices'],
@@ -344,12 +342,12 @@ export function useGetAllNotices() {
       if (!actor) return [];
       return actor.getAllNotices();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useCreateVisitorRequest() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -365,7 +363,7 @@ export function useCreateVisitorRequest() {
 }
 
 export function useGetAllVisitorRequests() {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<VisitorRequest[]>({
     queryKey: ['allVisitorRequests'],
@@ -373,12 +371,12 @@ export function useGetAllVisitorRequests() {
       if (!actor) return [];
       return actor.getAllVisitorRequests();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetVisitorRequestsByFlat(flatNumber: bigint) {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<VisitorRequest[]>({
     queryKey: ['visitorRequestsByFlat', flatNumber.toString()],
@@ -386,12 +384,12 @@ export function useGetVisitorRequestsByFlat(flatNumber: bigint) {
       if (!actor) return [];
       return actor.getVisitorRequestsByFlat(flatNumber);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useUpdateVisitorRequestStatus() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -408,7 +406,7 @@ export function useUpdateVisitorRequestStatus() {
 }
 
 export function useGetCallerNotifications() {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<Notification[]>({
     queryKey: ['callerNotifications'],
@@ -416,13 +414,13 @@ export function useGetCallerNotifications() {
       if (!actor) return [];
       return actor.getCallerNotifications();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
     refetchInterval: 30000,
   });
 }
 
 export function useMarkNotificationAsRead() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -437,7 +435,7 @@ export function useMarkNotificationAsRead() {
 }
 
 export function useMarkAllNotificationsAsRead() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -452,7 +450,7 @@ export function useMarkAllNotificationsAsRead() {
 }
 
 export function useGetExpenditures(month: string, year: bigint) {
-  const { actor, isFetching } = useActor();
+  const { actor, actorFetching } = useActorContext();
 
   return useQuery<Expenditure | null>({
     queryKey: ['expenditures', month, year.toString()],
@@ -460,12 +458,12 @@ export function useGetExpenditures(month: string, year: bigint) {
       if (!actor) return null;
       return actor.getExpenditures(month, year);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useRecordExpenditure() {
-  const { actor } = useActor();
+  const { actor } = useActorContext();
   const queryClient = useQueryClient();
 
   return useMutation({

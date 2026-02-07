@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGetMaintenanceStatusForAllFlats } from '../../hooks/useQueries';
+import { useActorContext } from '../../hooks/useActorContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,6 +10,8 @@ import { Download, Printer, Loader2 } from 'lucide-react';
 import { generateCSV, downloadCSV } from '../../utils/csv';
 import { openPrintView } from '../../utils/print';
 import { formatDate } from '../../utils/dates';
+import { getValidFlatNumbers } from '../../utils/flatNumbers';
+import { QueryStateCard } from '../../components/QueryStateCard';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -23,7 +26,22 @@ export default function PaymentsPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
-  const { data: flatStatuses = [], isLoading, error } = useGetMaintenanceStatusForAllFlats(selectedMonth, BigInt(selectedYear));
+  const { actor, actorFetching } = useActorContext();
+  const { data: backendStatuses = [], isLoading, error, refetch } = useGetMaintenanceStatusForAllFlats(selectedMonth, BigInt(selectedYear));
+
+  // Generate complete flat list from frontend rules
+  const allFlatNumbers = getValidFlatNumbers();
+  
+  // Merge backend data with complete flat list
+  const flatStatuses = allFlatNumbers.map(flatNum => {
+    const backendStatus = backendStatuses.find(s => s.flatNumber.toString() === flatNum);
+    return {
+      flatNumber: BigInt(flatNum),
+      isPaid: backendStatus?.isPaid || false,
+      upiRef: backendStatus?.upiRef || null,
+      paymentTimestamp: backendStatus?.paymentTimestamp || null,
+    };
+  });
 
   const handleExportCSV = () => {
     const csvData = flatStatuses.map(status => ({
@@ -45,6 +63,27 @@ export default function PaymentsPage() {
 
   const paidCount = flatStatuses.filter(s => s.isPaid).length;
   const unpaidCount = flatStatuses.filter(s => !s.isPaid).length;
+  const totalFlats = flatStatuses.length;
+
+  // Show connecting state while actor is initializing
+  if (!actor || actorFetching) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Payment Management</h1>
+          <p className="text-muted-foreground mt-1">Review and track maintenance payments</p>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Connecting to backend...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -94,21 +133,13 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-destructive text-sm">Error loading payment records: {String(error)}</p>
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Total Flats</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{flatStatuses.length}</div>
+            <div className="text-2xl font-bold">{totalFlats}</div>
           </CardContent>
         </Card>
         <Card>
@@ -129,23 +160,23 @@ export default function PaymentsPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment Records</CardTitle>
-          <CardDescription>
-            {selectedMonth} {selectedYear}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : flatStatuses.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No flats found for {selectedMonth} {selectedYear}</p>
-            </div>
-          ) : (
+      <QueryStateCard
+        isLoading={isLoading}
+        isError={!!error}
+        error={error}
+        isEmpty={false}
+        onRetry={() => refetch()}
+        title="Payment Records"
+        description={`${selectedMonth} ${selectedYear}`}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Records</CardTitle>
+            <CardDescription>
+              {selectedMonth} {selectedYear}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -176,9 +207,9 @@ export default function PaymentsPage() {
                 </TableBody>
               </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </QueryStateCard>
     </div>
   );
 }

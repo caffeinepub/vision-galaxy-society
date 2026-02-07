@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vision-galaxy-v3';
+const CACHE_NAME = 'vision-galaxy-v4';
 
 // Build cache URLs relative to service worker scope
 function getCacheUrls() {

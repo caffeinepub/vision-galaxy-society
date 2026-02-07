@@ -1,295 +1,82 @@
 <!DOCTYPE html>
-<html lang='en'>
-    <head>
-        <meta charset='UTF-8' />
-        <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-        <meta name='theme-color' content='#0ea5e9' />
-        <meta name='description' content='Vision Galaxy Society Management System' />
-        <meta name='mobile-web-app-capable' content='yes' />
-        <meta name='apple-mobile-web-app-capable' content='yes' />
-        <meta name='apple-mobile-web-app-status-bar-style' content='default' />
-        <meta name='apple-mobile-web-app-title' content='Vision Galaxy' />
-        <link rel='manifest' href='./manifest.webmanifest' />
-        <link rel='icon' type='image/png' href='./assets/generated/vision-galaxy-logo.dim_512x512.png' />
-        <link rel='apple-touch-icon' href='./assets/generated/vision-galaxy-logo.dim_512x512.png' />
-        <title>Vision Galaxy Society</title>
-        <style>
-          /* Inline fallback UI styles */
-          #startup-fallback {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            z-index: 9999;
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Vision Galaxy Society Management" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/assets/generated/vision-galaxy-logo.dim_512x512.png" />
+    <title>Vision Galaxy Society</title>
+    
+    <script type="module">
+      // Redirect from ic0.app/?canisterId=... to canonical URL or canister subdomain
+      (function() {
+        const currentUrl = new URL(window.location.href);
+        const canonicalUrl = import.meta.env.VITE_CANONICAL_APP_URL || '';
+        
+        // Only redirect if accessed via ic0.app with canisterId parameter
+        if (currentUrl.hostname === 'ic0.app' && currentUrl.searchParams.has('canisterId')) {
+          const canisterId = currentUrl.searchParams.get('canisterId');
+          const hash = currentUrl.hash;
+          
+          let targetUrl;
+          if (canonicalUrl) {
+            // Use canonical URL if configured
+            targetUrl = canonicalUrl + hash;
+          } else {
+            // Fall back to canister subdomain
+            targetUrl = `https://${canisterId}.ic0.app${hash}`;
           }
-          @media (prefers-color-scheme: dark) {
-            #startup-fallback {
-              background: #0a0a0a;
-              color: #fafafa;
-            }
+          
+          // Prevent redirect loop: only redirect if target is different
+          if (targetUrl !== currentUrl.href) {
+            window.location.replace(targetUrl);
           }
-          .startup-content {
-            text-align: center;
-            max-width: 400px;
-            padding: 2rem;
-          }
-          .startup-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #e5e7eb;
-            border-top-color: #0ea5e9;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1.5rem;
-          }
-          @media (prefers-color-scheme: dark) {
-            .startup-spinner {
-              border-color: #27272a;
-              border-top-color: #0ea5e9;
-            }
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-          .startup-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #111827;
-          }
-          @media (prefers-color-scheme: dark) {
-            .startup-title {
-              color: #fafafa;
-            }
-          }
-          .startup-message {
-            font-size: 0.875rem;
-            color: #6b7280;
-            margin-bottom: 1.5rem;
-          }
-          @media (prefers-color-scheme: dark) {
-            .startup-message {
-              color: #a1a1aa;
-            }
-          }
-          .startup-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-          }
-          .startup-button {
-            padding: 0.625rem 1.25rem;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-          }
-          .startup-button-primary {
-            background: #0ea5e9;
-            color: white;
-          }
-          .startup-button-primary:hover {
-            background: #0284c7;
-          }
-          .startup-button-secondary {
-            background: #f3f4f6;
-            color: #374151;
-          }
-          @media (prefers-color-scheme: dark) {
-            .startup-button-secondary {
-              background: #27272a;
-              color: #fafafa;
-            }
-          }
-          .startup-button-secondary:hover {
-            background: #e5e7eb;
-          }
-          @media (prefers-color-scheme: dark) {
-            .startup-button-secondary:hover {
-              background: #3f3f46;
-            }
-          }
-          .startup-error-icon {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 1rem;
-            color: #ef4444;
-          }
-          .hidden {
-            display: none !important;
-          }
-        </style>
-        <script>
-          // IC hosting guard: redirect query-param access to canister subdomain
-          (function() {
-            try {
-              var loc = window.location;
-              var host = loc.hostname;
-              var search = loc.search;
-              
-              // Check if we're on ic0.app with ?canisterId= query param
-              if (host === 'ic0.app' && search.indexOf('canisterId=') !== -1) {
-                var params = new URLSearchParams(search);
-                var canisterId = params.get('canisterId');
-                
-                if (canisterId) {
-                  // Redirect to canister subdomain URL
-                  var newUrl = loc.protocol + '//' + canisterId + '.ic0.app' + loc.pathname + loc.hash;
-                  window.location.replace(newUrl);
-                }
-              }
-            } catch (e) {
-              // Fail silently - don't block page load
-            }
-          })();
-
-          // Early startup diagnostics
-          (function() {
-            var startupState = {
-              hasError: false,
-              errorMessage: '',
-              reactMounted: false
-            };
-
-            // Global error handler
-            window.addEventListener('error', function(event) {
-              if (!startupState.reactMounted) {
-                console.error('Startup error:', event.error || event.message);
-                startupState.hasError = true;
-                startupState.errorMessage = 'Application failed to start';
-                updateFallbackUI();
-              }
-            });
-
-            // Unhandled promise rejection handler
-            window.addEventListener('unhandledrejection', function(event) {
-              if (!startupState.reactMounted) {
-                console.error('Startup promise rejection:', event.reason);
-                startupState.hasError = true;
-                startupState.errorMessage = 'Application failed to start';
-                updateFallbackUI();
-              }
-            });
-
-            // Timeout to detect if React never mounts
-            var startupTimeout = setTimeout(function() {
-              if (!startupState.reactMounted) {
-                console.warn('React mount timeout - app may have failed to start');
-                startupState.hasError = true;
-                startupState.errorMessage = 'Application failed to start';
-                updateFallbackUI();
-              }
-            }, 8000); // 8 second timeout
-
-            // Listen for React mount signal
-            window.addEventListener('react-mounted', function() {
-              startupState.reactMounted = true;
-              clearTimeout(startupTimeout);
-              hideFallbackUI();
-            });
-
-            function updateFallbackUI() {
-              var fallback = document.getElementById('startup-fallback');
-              if (!fallback) return;
-
-              if (startupState.hasError) {
-                // Switch to error state
-                var spinner = fallback.querySelector('.startup-spinner');
-                var title = fallback.querySelector('.startup-title');
-                var message = fallback.querySelector('.startup-message');
-                var actions = fallback.querySelector('.startup-actions');
-
-                if (spinner) spinner.className = 'startup-error-icon';
-                if (spinner) spinner.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
-                
-                if (title) title.textContent = 'Failed to Start';
-                if (message) message.textContent = startupState.errorMessage || 'The application encountered an error during startup.';
-                if (actions) actions.classList.remove('hidden');
-              }
-            }
-
-            function hideFallbackUI() {
-              var fallback = document.getElementById('startup-fallback');
-              if (fallback) {
-                fallback.style.display = 'none';
-              }
-            }
-
-            // Hard reload function
-            window.performHardReload = function() {
-              console.log('Performing hard reload...');
-              
-              // Clear Cache Storage
-              if ('caches' in window) {
-                caches.keys().then(function(names) {
-                  return Promise.all(
-                    names.map(function(name) {
-                      return caches.delete(name).catch(function() {});
-                    })
-                  );
-                }).catch(function() {}).finally(function() {
-                  unregisterServiceWorkers();
-                });
-              } else {
-                unregisterServiceWorkers();
-              }
-            };
-
-            function unregisterServiceWorkers() {
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  return Promise.all(
-                    registrations.map(function(registration) {
-                      return registration.unregister().catch(function() {});
-                    })
-                  );
-                }).catch(function() {}).finally(function() {
-                  reloadPage();
-                });
-              } else {
-                reloadPage();
-              }
-            }
-
-            function reloadPage() {
-              setTimeout(function() {
-                window.location.reload(true);
-              }, 100);
-            }
-
-            // Make state available globally for debugging
-            window.__startupState = startupState;
-          })();
-        </script>
-    </head>
-    <body>
-        <!-- HTML fallback UI shown before React mounts -->
-        <div id="startup-fallback">
-          <div class="startup-content">
-            <div class="startup-spinner"></div>
-            <div class="startup-title">Starting Vision Galaxy</div>
-            <div class="startup-message">Please wait while we load the application...</div>
-            <div class="startup-actions hidden">
-              <button class="startup-button startup-button-primary" onclick="window.location.reload()">
-                Reload
-              </button>
-              <button class="startup-button startup-button-secondary" onclick="window.performHardReload()">
-                Hard Reload (Clear Cache)
-              </button>
-            </div>
-          </div>
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Startup fallback UI -->
+      <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; font-family: system-ui, -apple-system, sans-serif;">
+        <div style="text-align: center; padding: 2rem;">
+          <div style="width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.1); border-top-color: white; border-radius: 50%; margin: 0 auto 1.5rem; animation: spin 1s linear infinite;"></div>
+          <h1 style="font-size: 1.5rem; font-weight: 600; margin: 0 0 0.5rem;">Loading Vision Galaxy Society...</h1>
+          <p style="color: rgba(255,255,255,0.7); margin: 0;">Please wait while we initialize the application</p>
         </div>
-
-        <div id='root'></div>
-        <script type='module' src='./src/main.tsx'></script>
-    </body>
+      </div>
+      <style>
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      </style>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Error handler for startup failures -->
+    <script>
+      window.addEventListener('error', function(event) {
+        const root = document.getElementById('root');
+        if (root && root.innerHTML.includes('Loading Vision Galaxy Society')) {
+          root.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; font-family: system-ui, -apple-system, sans-serif;">
+              <div style="text-align: center; padding: 2rem; max-width: 500px;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                <h1 style="font-size: 1.5rem; font-weight: 600; margin: 0 0 1rem;">Failed to Load Application</h1>
+                <p style="color: rgba(255,255,255,0.8); margin: 0 0 1.5rem; line-height: 1.6;">
+                  We encountered an error while loading the application. This might be a temporary issue.
+                </p>
+                <button onclick="window.location.reload()" style="background: white; color: #1a1a2e; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 1rem;">
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          `;
+        }
+      });
+    </script>
+  </body>
 </html>

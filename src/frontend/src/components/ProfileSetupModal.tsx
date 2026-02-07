@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSaveCallerUserProfile } from '../hooks/useQueries';
-import { getValidFlatNumbers, isValidFlatNumber, formatFlatNumber } from '../utils/flatNumbers';
+import { isValidFlatNumber } from '../utils/flatNumbers';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import type { UserProfile } from '../backend';
+import FlatNumberPicker from './FlatNumberPicker';
 
 export default function ProfileSetupModal() {
   const [name, setName] = useState('');
@@ -15,7 +16,13 @@ export default function ProfileSetupModal() {
   const [flatNumber, setFlatNumber] = useState('');
   const saveProfileMutation = useSaveCallerUserProfile();
 
-  const validFlatNumbers = getValidFlatNumbers();
+  // Close modal automatically when profile is saved successfully
+  useEffect(() => {
+    if (saveProfileMutation.isSuccess) {
+      // The modal will be hidden by the parent component when userProfile becomes non-null
+      // No need to do anything here, just let the mutation complete
+    }
+  }, [saveProfileMutation.isSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +39,7 @@ export default function ProfileSetupModal() {
 
     if (userType === 'FlatOwner') {
       if (!flatNumber) {
-        toast.error('Please select your flat number');
+        toast.error('Please enter your flat number');
         return;
       }
       
@@ -52,7 +59,6 @@ export default function ProfileSetupModal() {
     try {
       await saveProfileMutation.mutateAsync(profile);
       toast.success('Profile created successfully!');
-      // No need to call onComplete - the query cache update will trigger re-render
     } catch (error: any) {
       toast.error(error.message || 'Failed to create profile');
     }
@@ -96,18 +102,12 @@ export default function ProfileSetupModal() {
           {userType === 'FlatOwner' && (
             <div className="space-y-2">
               <Label htmlFor="flatNumber">Flat Number</Label>
-              <Select value={flatNumber} onValueChange={setFlatNumber} required>
-                <SelectTrigger id="flatNumber">
-                  <SelectValue placeholder="Select your flat number" />
-                </SelectTrigger>
-                <SelectContent>
-                  {validFlatNumbers.map(num => (
-                    <SelectItem key={num} value={num}>
-                      {formatFlatNumber(num)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FlatNumberPicker
+                id="flatNumber"
+                value={flatNumber}
+                onChange={setFlatNumber}
+                placeholder="Type or select flat number"
+              />
             </div>
           )}
 

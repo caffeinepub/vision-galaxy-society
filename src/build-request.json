@@ -1,54 +1,61 @@
 {
   "kind": "build_request",
-  "title": "Fix secretary settings not saving due to incorrect 'No changes to save' dirty-check",
-  "priority": "high",
+  "title": "Improve deployment retry and diagnostics for failed application creation",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the secretary Settings page so that editing any of the configuration fields (Monthly Maintenance Amount, Society UPI ID, Guard Mobile Number) correctly marks the form as changed and allows saving, instead of incorrectly showing/behaving like there is “No changes to save”.",
+      "text": "When an IC mainnet deploy/build fails with a generic failure (e.g., the platform reports \"Application creation unsuccessful\"), provide a clear, actionable troubleshooting path by improving deploy output and documentation so a developer can immediately identify the likely cause (identity/wallet/cycles/CaLM reservation/dfx issues) and the next command(s) to run.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7",
+          "msg-8"
         ],
         "quotes": [
-          "The bug is still there where the secretary's profile settings is not being saved saying nothing to change"
+          "❌ Application creation unsuccessful",
+          "That build didn’t go through — want me to try again?",
+          "Yes"
         ]
       },
       "acceptanceCriteria": [
-        "On `frontend/src/pages/secretary/SettingsPage.tsx`, after changing any of the three configuration inputs from their currently loaded values, the Save Configuration button becomes enabled (unless validation errors exist).",
-        "The “No changes to save” helper text only appears when the currently displayed input values are effectively identical to the last loaded/saved values (after normalization such as trimming text fields and comparing the maintenance amount numerically).",
-        "If the user types leading/trailing spaces into UPI ID or Guard Mobile Number, the dirty-check uses trimmed values so that saving behaves consistently with what is sent to the backend (trimmed).",
-        "Maintenance amount dirty-check compares numeric values (e.g., '1500' and '01500' should be treated as the same amount)."
+        "Deployment helper output includes a dedicated section for generic failures that: (1) points to the saved log file location, (2) prints the last relevant error lines, and (3) links to the local troubleshooting doc path.",
+        "Troubleshooting documentation explicitly includes the failure text \"Application creation unsuccessful\" as a symptom and lists concrete checks/commands (dfx version, identity, wallet, cycles balance, pre-create canisters, retry deploy).",
+        "No user-facing documentation text uses non-English language."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure the secretary Settings page baseline state is not stale across settings refetches or identity/actor changes, so the dirty-check reflects the currently loaded backend settings for the current logged-in principal.",
+      "text": "Enhance the existing deployment retry workflow to reduce repeated failures by automatically recommending and/or invoking the canister pre-creation step when the deployment output indicates canister reservation or creation problems (including, but not limited to, CaLM reservation failures).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7",
+          "msg-8"
         ],
         "quotes": [
-          "The bug is still there where the secretary's profile settings is not being saved saying nothing to change"
+          "❌ Application creation unsuccessful",
+          "That build didn’t go through — want me to try again?",
+          "Yes"
         ]
       },
       "acceptanceCriteria": [
-        "When the query `useGetSecretarySettings()` returns new settings (e.g., after a successful save + invalidation/refetch, or after logging out and logging in as another user), the form’s baseline used for dirty detection updates to match the latest fetched settings as long as the user does not currently have unsaved edits.",
-        "After saving successfully, the form fields and baseline both reflect the saved (normalized) values, and subsequent renders do not revert the Save button back to a disabled state incorrectly."
+        "If deploy output matches a canister reservation/creation failure pattern, the deploy helper prints a prominent instruction to run `./frontend/deploy/ic-precreate-canisters.sh` before the next retry (or performs that step when a non-interactive safe mode flag is enabled, if implemented).",
+        "Retry attempts continue to save per-attempt logs to a deterministic location and print that location at the end of the script execution.",
+        "The deployment helper continues to support the existing CaLM-specific detection behavior and does not regress successful deploy output (frontend URL/canister ID)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit any files under frontend/src/components/ui (Shadcn components are read-only).",
-    "Do not edit immutable hook files: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
-    "Keep the backend as a single Motoko actor (no new backend services)."
+    "Do not modify files under frontend/src/components/ui (read-only).",
+    "Do not modify frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, or frontend/src/main.tsx (immutable paths).",
+    "Backend must remain a single Motoko actor in backend/main.mo; only add a migration if backend stable state changes (not expected for deployment-script/doc changes)."
   ],
   "nonGoals": [
-    "Adding new settings fields beyond maintenance amount, UPI ID, and guard mobile number.",
-    "Changing authorization rules for who is allowed to update secretary settings (unless required to fix the specific reported bug).",
-    "Implementing persistent backend storage for the uploaded logo (logo is currently localStorage-based and is not part of this bug)."
+    "Fixing in-app performance/unresponsiveness, payment totals showing as zero, or the Secretary Settings \"Save Configuration\" button behavior (tracked separately in existing feature requirements REQ-1 to REQ-4 in project_state.json).",
+    "Adding any third-party CI/CD, cloud deployment, or external infrastructure integrations."
   ],
   "imageRequirements": {
     "required": [],

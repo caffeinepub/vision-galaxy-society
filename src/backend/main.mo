@@ -11,6 +11,8 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import UserApproval "user-approval/approval";
 
+
+
 actor {
   // Types for primary entities
   public type MaintenanceRecord = {
@@ -210,7 +212,6 @@ actor {
   };
 
   /* ==================== Required Approval Functions ==================== */
-
   public query ({ caller }) func isCallerApproved() : async Bool {
     AccessControl.hasPermission(accessControlState, caller, #admin) or UserApproval.isApproved(approvalState, caller);
   };
@@ -457,6 +458,7 @@ actor {
     };
   };
 
+  // Returns [FlatPaymentStatus] for 101-523 with all maintained flat numbers. Empty for Extra Flats.
   public query ({ caller }) func getMaintenanceStatusForAllFlats(month : Text, year : Nat) : async [FlatPaymentStatus] {
     if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can perform this action");

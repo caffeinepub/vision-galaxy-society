@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useCreateVisitorRequest, useGetFlatMobileNumbers } from '../../hooks/useQueries';
 import { buildWhatsappDeepLink } from '../../utils/whatsapp';
-import { getValidFlatNumbers, formatFlatNumber } from '../../utils/flatNumbers';
+import { isValidFlatNumber } from '../../utils/flatNumbers';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MessageCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import FlatNumberPicker from '../../components/FlatNumberPicker';
 
 export default function VisitorRequestCreatePage() {
   const navigate = useNavigate();
@@ -22,17 +23,27 @@ export default function VisitorRequestCreatePage() {
   const [flatNumber, setFlatNumber] = useState<string>('');
   const [selectedMobile, setSelectedMobile] = useState('');
 
+  // Only fetch mobile numbers when flatNumber is valid
+  const shouldFetch = flatNumber && isValidFlatNumber(flatNumber);
   const { data: mobileNumbers = [] } = useGetFlatMobileNumbers(
-    flatNumber ? BigInt(flatNumber) : BigInt(0)
+    shouldFetch ? BigInt(flatNumber) : BigInt(0)
   );
 
-  const validFlatNumbers = getValidFlatNumbers();
+  // Reset selected mobile when flat number changes
+  useEffect(() => {
+    setSelectedMobile('');
+  }, [flatNumber]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!visitorName || !purpose || !flatNumber || !selectedMobile) {
       toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (!isValidFlatNumber(flatNumber)) {
+      toast.error('Please enter a valid flat number');
       return;
     }
 
@@ -102,21 +113,15 @@ export default function VisitorRequestCreatePage() {
 
             <div className="space-y-2">
               <Label htmlFor="flatNumber">Flat Number</Label>
-              <Select value={flatNumber} onValueChange={setFlatNumber}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select flat number" />
-                </SelectTrigger>
-                <SelectContent>
-                  {validFlatNumbers.map(num => (
-                    <SelectItem key={num} value={num}>
-                      {formatFlatNumber(num)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FlatNumberPicker
+                id="flatNumber"
+                value={flatNumber}
+                onChange={setFlatNumber}
+                placeholder="Type or select flat number"
+              />
             </div>
 
-            {flatNumber && mobileNumbers.length > 0 && (
+            {shouldFetch && mobileNumbers.length > 0 && (
               <div className="space-y-2">
                 <Label htmlFor="mobileNumber">Contact Number</Label>
                 <Select value={selectedMobile} onValueChange={setSelectedMobile}>
@@ -134,7 +139,7 @@ export default function VisitorRequestCreatePage() {
               </div>
             )}
 
-            {flatNumber && mobileNumbers.length === 0 && (
+            {shouldFetch && mobileNumbers.length === 0 && (
               <Alert variant="destructive">
                 <AlertDescription>
                   No mobile numbers registered for Flat {flatNumber}. Please ask the resident to add their contact numbers.

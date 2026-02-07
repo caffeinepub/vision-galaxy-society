@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, Image as ImageIcon, AlertCircle, CheckCircle2, Settings, Loader2, RotateCcw } from 'lucide-react';
+import { Upload, Image as ImageIcon, AlertCircle, CheckCircle2, Settings, Loader2, RotateCcw, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGetSecretarySettings, useUpdateSecretarySettings } from '../../hooks/useQueries';
+import { useActorContext } from '../../hooks/useActorContext';
 import { 
   validateMaintenanceAmount, 
   validateUpiId, 
@@ -14,6 +15,7 @@ import {
   validateAllSettings,
   normalizeSettings
 } from '../../utils/settingsValidation';
+import { sanitizeError } from '../../utils/sanitizeError';
 import SettingsSkeleton from './components/SettingsSkeleton';
 
 export default function SettingsPage() {
@@ -26,7 +28,8 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Settings state
-  const { data: settings, isLoading: loadingSettings, isFetched } = useGetSecretarySettings();
+  const { actor, actorFetching } = useActorContext();
+  const { data: settings, isLoading: loadingSettings, isFetched, error: settingsError, refetch } = useGetSecretarySettings();
   const updateSettingsMutation = useUpdateSecretarySettings();
 
   const [maintenanceAmount, setMaintenanceAmount] = useState('');
@@ -244,7 +247,8 @@ export default function SettingsPage() {
       
       toast.success('Settings saved successfully!');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to save settings');
+      const errorMessage = sanitizeError(error);
+      toast.error(errorMessage);
     }
   };
 
@@ -252,6 +256,62 @@ export default function SettingsPage() {
   const effectiveLogo = draftLogoPreview || savedCustomLogo || '/assets/generated/vision-galaxy-logo.dim_512x512.png';
   const hasCustomLogo = !!savedCustomLogo;
   const hasDraftLogo = !!draftLogoPreview;
+
+  // Show connecting state while actor is initializing
+  if (!actor || actorFetching) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage society branding, maintenance configuration, and contact details
+          </p>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Connecting to backend...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error state with retry
+  if (settingsError) {
+    const errorMessage = sanitizeError(settingsError);
+    return (
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage society branding, maintenance configuration, and contact details
+          </p>
+        </div>
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="flex flex-col gap-3">
+                <span>{errorMessage}</span>
+                <Button
+                  onClick={() => refetch()}
+                  variant="outline"
+                  size="sm"
+                  className="w-fit"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Show skeleton while loading
   if (loadingSettings || !isFetched) {
@@ -322,10 +382,10 @@ export default function SettingsPage() {
           />
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Button
-              variant="outline"
               onClick={handleBrowseClick}
+              variant="outline"
               disabled={uploading}
               className="w-full"
             >
@@ -337,10 +397,11 @@ export default function SettingsPage() {
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  Choose New Logo
+                  Browse
                 </>
               )}
             </Button>
+
             <Button
               onClick={handleSaveLogo}
               disabled={!hasDraftLogo || uploading}
@@ -349,11 +410,12 @@ export default function SettingsPage() {
               <CheckCircle2 className="h-4 w-4 mr-2" />
               Save Logo
             </Button>
+
             <Button
-              variant="outline"
               onClick={handleResetLogo}
+              variant="outline"
               disabled={!hasCustomLogo || uploading}
-              className="w-full sm:col-span-2"
+              className="w-full"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset to Default
@@ -362,7 +424,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Configuration Section */}
+      {/* Society Configuration Section */}
       <Card>
         <CardHeader className="space-y-1">
           <CardTitle className="flex items-center gap-2 text-xl">
@@ -374,36 +436,30 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Maintenance Amount */}
+          {/* Monthly Maintenance Amount */}
           <div className="space-y-2">
-            <Label htmlFor="maintenanceAmount" className="text-sm font-medium">
+            <Label htmlFor="maintenanceAmount">
               Monthly Maintenance Amount (₹) <span className="text-destructive">*</span>
             </Label>
             <Input
               id="maintenanceAmount"
               type="number"
-              min="1"
-              step="1"
               value={maintenanceAmount}
               onChange={(e) => handleMaintenanceAmountChange(e.target.value)}
-              placeholder="e.g., 1500"
+              placeholder="e.g., 1000"
               className={errors.maintenanceAmount ? 'border-destructive' : ''}
             />
-            {errors.maintenanceAmount ? (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5" />
-                {errors.maintenanceAmount}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                This amount will be used for UPI payment links and displayed to flat owners
-              </p>
+            {errors.maintenanceAmount && (
+              <p className="text-sm text-destructive">{errors.maintenanceAmount}</p>
             )}
+            <p className="text-xs text-muted-foreground">
+              This amount will be used for UPI payment links and displayed to flat owners
+            </p>
           </div>
 
-          {/* UPI ID */}
+          {/* Society UPI ID */}
           <div className="space-y-2">
-            <Label htmlFor="upiId" className="text-sm font-medium">
+            <Label htmlFor="upiId">
               Society UPI ID <span className="text-destructive">*</span>
             </Label>
             <Input
@@ -414,21 +470,17 @@ export default function SettingsPage() {
               placeholder="e.g., society@upi"
               className={errors.upiId ? 'border-destructive' : ''}
             />
-            {errors.upiId ? (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5" />
-                {errors.upiId}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                UPI ID where flat owners will send maintenance payments
-              </p>
+            {errors.upiId && (
+              <p className="text-sm text-destructive">{errors.upiId}</p>
             )}
+            <p className="text-xs text-muted-foreground">
+              UPI ID where flat owners will send maintenance payments
+            </p>
           </div>
 
           {/* Guard Mobile Number */}
           <div className="space-y-2">
-            <Label htmlFor="guardMobileNumber" className="text-sm font-medium">
+            <Label htmlFor="guardMobileNumber">
               Guard Mobile Number (WhatsApp) <span className="text-destructive">*</span>
             </Label>
             <Input
@@ -436,46 +488,42 @@ export default function SettingsPage() {
               type="tel"
               value={guardMobileNumber}
               onChange={(e) => handleGuardMobileNumberChange(e.target.value)}
-              placeholder="e.g., +919876543210"
+              placeholder="e.g., 9876543210"
               className={errors.guardMobileNumber ? 'border-destructive' : ''}
             />
-            {errors.guardMobileNumber ? (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5" />
-                {errors.guardMobileNumber}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Mobile number for guard communication and visitor request notifications
-              </p>
+            {errors.guardMobileNumber && (
+              <p className="text-sm text-destructive">{errors.guardMobileNumber}</p>
             )}
+            <p className="text-xs text-muted-foreground">
+              Mobile number for guard communication and visitor request notifications
+            </p>
           </div>
 
           {/* Save Button */}
-          <Button
-            onClick={handleSaveSettings}
-            disabled={isSaveDisabled}
-            className="w-full"
-            size="lg"
-          >
-            {updateSettingsMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving Configuration...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Save Configuration
-              </>
+          <div className="flex flex-col gap-3 pt-4">
+            <Button
+              onClick={handleSaveSettings}
+              disabled={isSaveDisabled}
+              className="w-full sm:w-auto"
+            >
+              {updateSettingsMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Save Configuration
+                </>
+              )}
+            </Button>
+            {!isDirty && (
+              <p className="text-sm text-muted-foreground">
+                No changes to save
+              </p>
             )}
-          </Button>
-          
-          {!isDirty && !updateSettingsMutation.isPending && (
-            <p className="text-xs text-center text-muted-foreground">
-              No changes to save
-            </p>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

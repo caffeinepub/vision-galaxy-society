@@ -1,42 +1,52 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix secretary settings dirty-check normalization and baseline refresh behavior",
+  "title": "Improve IC mainnet deploy retry diagnostics and precreate guidance",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Normalize secretary settings values for reliable dirty-checking and correct Save button enabled/disabled behavior.",
+      "summary": "Improve generic IC deploy failure diagnostics with actionable output and troubleshooting documentation.",
       "acceptanceCriteria": [
-        "On `frontend/src/pages/secretary/SettingsPage.tsx`, after changing any of the three configuration inputs from their currently loaded values, the Save Configuration button becomes enabled (unless validation errors exist).",
-        "The “No changes to save” helper text only appears when the currently displayed input values are effectively identical to the last loaded/saved values (after normalization such as trimming text fields and comparing the maintenance amount numerically).",
-        "If the user types leading/trailing spaces into UPI ID or Guard Mobile Number, the dirty-check uses trimmed values so that saving behaves consistently with what is sent to the backend (trimmed).",
-        "Maintenance amount dirty-check compares numeric values (e.g., '1500' and '01500' should be treated as the same amount)."
+        "Deployment helper output includes a dedicated section for generic failures that: (1) points to the saved log file location, (2) prints the last relevant error lines, and (3) links to the local troubleshooting doc path.",
+        "Troubleshooting documentation explicitly includes the failure text \"Application creation unsuccessful\" as a symptom and lists concrete checks/commands (dfx version, identity, wallet, cycles balance, pre-create canisters, retry deploy).",
+        "No user-facing documentation text uses non-English language."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/secretary/SettingsPage.tsx",
+          "path": "frontend/deploy/ic-deploy-with-retry.sh",
           "operation": "modify",
-          "description": "Update dirty-check logic to compare normalized values: trim UPI ID and guard mobile number, and compare maintenance amount numerically/canonically so equivalent inputs (e.g., '01500' vs '1500') are treated as identical. Ensure the Save Configuration disabled state and the “No changes to save” helper text are driven by this normalized comparison."
+          "description": "Add a dedicated \"Generic Failure\" diagnostics section when deploy output contains generic symptoms (including the exact text \"Application creation unsuccessful\"). The section must (1) print the deterministic per-attempt log file path, (2) print the last relevant error lines (e.g., tail of the log and/or filtered error lines), and (3) point to the local doc path frontend/docs/deployment-troubleshooting.md. Also ensure the script always prints the log location at the end of execution (success or failure) and that log files are written to a deterministic project path (e.g., under frontend/deploy/logs/...) rather than a system temp default."
         },
         {
-          "path": "frontend/src/utils/settingsValidation.ts",
+          "path": "frontend/docs/deployment-troubleshooting.md",
           "operation": "modify",
-          "description": "Add/adjust shared normalization helpers (e.g., trimming text fields and canonicalizing maintenance amount) that can be reused by SettingsPage for dirty-checking consistency with what is submitted. Keep validation behavior intact while enabling numeric-canonical comparisons in the UI."
+          "description": "Expand troubleshooting documentation with an explicit symptom section containing the exact failure text \"Application creation unsuccessful\" and a clear checklist of concrete commands to run (dfx --version, dfx identity whoami, dfx identity get-wallet --network ic, dfx wallet balance --network ic, ./frontend/deploy/ic-precreate-canisters.sh, ./frontend/deploy/ic-deploy-with-retry.sh, and optional dfx deploy --network ic). Keep all content English and include the local path reference that the script prints."
+        },
+        {
+          "path": "frontend/deploy/README.md",
+          "operation": "modify",
+          "description": "Update the deployment guide to reference frontend/docs/deployment-troubleshooting.md as the canonical local troubleshooting path, and explicitly mention how to use the retry helper logs (where logs are saved and how to inspect them) for generic failures like \"Application creation unsuccessful\"."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Ensure the Settings page dirty-check baseline updates correctly on refetches and identity/actor changes without clobbering unsaved edits.",
+      "summary": "Enhance deploy retry flow to detect canister reservation/creation problems and recommend or run canister pre-creation before retrying.",
       "acceptanceCriteria": [
-        "When the query `useGetSecretarySettings()` returns new settings (e.g., after a successful save + invalidation/refetch, or after logging out and logging in as another user), the form’s baseline used for dirty detection updates to match the latest fetched settings as long as the user does not currently have unsaved edits.",
-        "After saving successfully, the form fields and baseline both reflect the saved (normalized) values, and subsequent renders do not revert the Save button back to a disabled state incorrectly."
+        "If deploy output matches a canister reservation/creation failure pattern, the deploy helper prints a prominent instruction to run `./frontend/deploy/ic-precreate-canisters.sh` before the next retry (or performs that step when a non-interactive safe mode flag is enabled, if implemented).",
+        "Retry attempts continue to save per-attempt logs to a deterministic location and print that location at the end of the script execution.",
+        "The deployment helper continues to support the existing CaLM-specific detection behavior and does not regress successful deploy output (frontend URL/canister ID)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/secretary/SettingsPage.tsx",
+          "path": "frontend/deploy/ic-deploy-with-retry.sh",
           "operation": "modify",
-          "description": "Refactor the settings initialization effect so the baseline and form fields can refresh when `useGetSecretarySettings()` returns updated data (including after query invalidation/refetch and actor/identity changes), but only when there are no unsaved edits based on the normalized dirty-check. After a successful save, set both baseline and inputs to the normalized saved values so the UI remains stable across subsequent refetches."
+          "description": "Broaden failure pattern detection beyond the existing CaLM phrase to include canister reservation/creation-related errors (including but not limited to CaLM reservation failures). When detected, print a prominent instruction to run ./frontend/deploy/ic-precreate-canisters.sh before the next retry. Optionally add a non-interactive safe mode flag (e.g., --auto-precreate) that will run the precreate script automatically once before the next retry when these patterns match. Preserve existing CaLM-specific messaging, keep success output unchanged (frontend URL/canister ID), and maintain deterministic per-attempt log saving with the final log location printed."
+        },
+        {
+          "path": "frontend/docs/deployment-troubleshooting.md",
+          "operation": "modify",
+          "description": "Document canister reservation/creation failure symptoms (including CaLM reservation) and the recommended recovery workflow: run ./frontend/deploy/ic-precreate-canisters.sh, then re-run ./frontend/deploy/ic-deploy-with-retry.sh (or dfx deploy --network ic). Ensure the doc aligns with the script’s output and log locations."
         }
       ]
     }

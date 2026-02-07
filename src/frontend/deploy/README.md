@@ -1,27 +1,43 @@
-# IC Mainnet Deployment Helper Tools
+# IC Mainnet Deployment Guide
 
-This directory contains helper scripts to make deploying to the Internet Computer mainnet more reliable and user-friendly.
+This guide explains how to deploy your application to the Internet Computer mainnet so it becomes publicly accessible.
 
-## Overview
+## Prerequisites
 
-The deployment helper tooling provides:
-- **Automatic cycles/wallet readiness check** before deployment
-- **Configurable retry logic** with automatic failure detection
-- **Clear, actionable guidance** when deployment fails
-- **Deterministic retry path** via canister pre-creation for CaLM failures
+Before deploying, ensure you have:
 
-## Scripts
+1. **dfx installed** (version 0.15.0 or higher)
+   ```bash
+   dfx --version
+   ```
+   If not installed: https://internetcomputer.org/docs/current/developer-docs/setup/install
 
-### `ic-deploy-with-retry.sh`
+2. **Node.js and pnpm installed**
+   ```bash
+   node --version
+   pnpm --version
+   ```
 
-Main deployment wrapper that runs `dfx deploy --network ic` with enhanced error detection, pre-deployment checks, and configurable retry logic.
+3. **dfx identity configured**
+   ```bash
+   dfx identity whoami
+   ```
+   If no identity exists:
+   ```bash
+   dfx identity new my-identity
+   dfx identity use my-identity
+   ```
 
-**Features:**
-- Pre-deployment cycles/wallet readiness verification
-- Automatic retry on failure with configurable attempts and delay
-- CaLM failure detection with specific remediation steps
-- Detailed logging of each attempt
-- Clear summary when all retries are exhausted
+4. **Cycles wallet configured for IC mainnet** with sufficient balance
+   ```bash
+   dfx identity get-wallet --network ic
+   dfx wallet balance --network ic
+   ```
+   If you need cycles: https://internetcomputer.org/docs/current/developer-docs/setup/cycles/cycles-faucet
 
-**Usage:**
+## Quick Start: Deploy Your Live Application
+
+Follow these steps to deploy your application to the Internet Computer mainnet and make it publicly accessible:
+
+### 1. Navigate to Project Root
 

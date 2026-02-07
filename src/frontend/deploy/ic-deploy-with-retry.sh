@@ -4,9 +4,23 @@
 
 set -e
 
+# Verify we're running from project root
+if [ ! -f "dfx.json" ]; then
+    echo "❌ Error: dfx.json not found"
+    echo ""
+    echo "This script must be run from the project root directory."
+    echo ""
+    echo "Example:"
+    echo "  $ cd /path/to/your/project"
+    echo "  $ ./frontend/deploy/ic-deploy-with-retry.sh"
+    echo ""
+    exit 1
+fi
+
 # Configuration (can be overridden via environment variables)
 MAX_RETRIES="${MAX_RETRIES:-3}"
 RETRY_DELAY="${RETRY_DELAY:-30}"
+AUTO_PRECREATE="${AUTO_PRECREATE:-false}"
 
 # Parse command-line flags
 while [[ $# -gt 0 ]]; do
@@ -19,17 +33,28 @@ while [[ $# -gt 0 ]]; do
             RETRY_DELAY="$2"
             shift 2
             ;;
+        --auto-precreate)
+            AUTO_PRECREATE="true"
+            shift
+            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --max-retries N    Maximum number of deployment attempts (default: 3)"
-            echo "  --retry-delay N    Seconds to wait between retries (default: 30)"
-            echo "  --help             Show this help message"
+            echo "  --max-retries N      Maximum number of deployment attempts (default: 3)"
+            echo "  --retry-delay N      Seconds to wait between retries (default: 30)"
+            echo "  --auto-precreate     Automatically run canister pre-creation on reservation failures"
+            echo "  --help               Show this help message"
             echo ""
             echo "Environment variables:"
-            echo "  MAX_RETRIES        Same as --max-retries"
-            echo "  RETRY_DELAY        Same as --retry-delay"
+            echo "  MAX_RETRIES          Same as --max-retries"
+            echo "  RETRY_DELAY          Same as --retry-delay"
+            echo "  AUTO_PRECREATE       Same as --auto-precreate (set to 'true')"
+            echo ""
+            echo "Example:"
+            echo "  $0 --max-retries 5 --retry-delay 60 --auto-precreate"
+            echo ""
+            echo "For more information, see: frontend/deploy/README.md"
             exit 0
             ;;
         *)
@@ -45,6 +70,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Configuration:"
 echo "  Max retries: $MAX_RETRIES"
 echo "  Retry delay: ${RETRY_DELAY}s"
+echo "  Auto pre-create: $AUTO_PRECREATE"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -58,6 +84,11 @@ if ! command -v dfx &> /dev/null; then
     echo "❌ Error: dfx command not found"
     echo ""
     echo "Please install dfx: https://internetcomputer.org/docs/current/developer-docs/setup/install"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📚 For more details, see: frontend/docs/deployment-troubleshooting.md"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     exit 1
 fi
 
@@ -67,8 +98,13 @@ if [ -z "$CURRENT_IDENTITY" ]; then
     echo "❌ Error: No dfx identity configured"
     echo ""
     echo "Please create and use an identity:"
-    echo "  $ dfx identity new <name>"
-    echo "  $ dfx identity use <name>"
+    echo "  $ dfx identity new my-identity"
+    echo "  $ dfx identity use my-identity"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📚 For more details, see: frontend/docs/deployment-troubleshooting.md"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     exit 1
 fi
 
@@ -142,6 +178,10 @@ echo ""
 ATTEMPT=1
 LAST_ERROR=""
 LAST_ERROR_TYPE=""
+LOG_DIR="frontend/deploy/logs"
+mkdir -p "$LOG_DIR"
+
+PRECREATE_RAN=false
 
 while [ $ATTEMPT -le $MAX_RETRIES ]; do
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -150,27 +190,73 @@ while [ $ATTEMPT -le $MAX_RETRIES ]; do
     echo ""
     
     # Run the deployment and capture output
-    if dfx deploy --network ic 2>&1 | tee /tmp/deploy-output-attempt-$ATTEMPT.log; then
+    LOG_FILE="${LOG_DIR}/deploy-output-attempt-${ATTEMPT}.log"
+    if dfx deploy --network ic 2>&1 | tee "$LOG_FILE"; then
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "✅ DEPLOYMENT SUCCESSFUL!"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo "Your canisters are now live on the Internet Computer."
-        echo "Check the output above for your frontend URL."
+        
+        # Try to extract frontend canister ID
+        FRONTEND_CANISTER_ID=$(dfx canister id frontend --network ic 2>/dev/null || echo "")
+        
+        if [ -n "$FRONTEND_CANISTER_ID" ]; then
+            echo "📱 Your application is now live and publicly accessible!"
+            echo ""
+            
+            # Check if VITE_CANONICAL_APP_URL is set
+            if [ -n "$VITE_CANONICAL_APP_URL" ]; then
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo "🌐 Access your app at:"
+                echo ""
+                echo "   $VITE_CANONICAL_APP_URL"
+                echo ""
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo ""
+                echo "   (Using canonical URL from VITE_CANONICAL_APP_URL)"
+            else
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo "🌐 Access your app at:"
+                echo ""
+                echo "   https://${FRONTEND_CANISTER_ID}.ic0.app"
+                echo ""
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo ""
+                echo "💡 Tip: Set VITE_CANONICAL_APP_URL to use a custom domain"
+                echo "   See: frontend/.env.example and frontend/deploy/README.md"
+            fi
+            echo ""
+            echo "Frontend canister ID: $FRONTEND_CANISTER_ID"
+            echo ""
+        else
+            echo "Your canisters are now live on the Internet Computer."
+            echo "Check the output above for your frontend URL."
+            echo ""
+        fi
+        
+        echo "📋 Deployment logs saved to: $LOG_FILE"
         echo ""
         exit 0
     else
         # Deployment failed - analyze the error
-        DEPLOY_OUTPUT=$(cat /tmp/deploy-output-attempt-$ATTEMPT.log)
+        DEPLOY_OUTPUT=$(cat "$LOG_FILE")
         
-        # Check for CaLM reservation failure
-        if echo "$DEPLOY_OUTPUT" | grep -q "CaLM permanent canister reservation failed"; then
-            LAST_ERROR_TYPE="CaLM"
-            LAST_ERROR="CaLM permanent canister reservation failed"
+        # Check for canister reservation/creation failures (including CaLM)
+        if echo "$DEPLOY_OUTPUT" | grep -qE "CaLM permanent canister reservation failed|canister.*reservation.*failed|canister.*creation.*failed|Application creation unsuccessful"; then
+            LAST_ERROR_TYPE="CANISTER_RESERVATION"
+            
+            # Extract specific error message
+            if echo "$DEPLOY_OUTPUT" | grep -q "CaLM permanent canister reservation failed"; then
+                LAST_ERROR="CaLM permanent canister reservation failed"
+            elif echo "$DEPLOY_OUTPUT" | grep -q "Application creation unsuccessful"; then
+                LAST_ERROR="Application creation unsuccessful"
+            else
+                LAST_ERROR="Canister reservation/creation failed"
+            fi
             
             echo ""
-            echo "❌ Attempt $ATTEMPT failed: CaLM permanent canister reservation failed"
+            echo "❌ Attempt $ATTEMPT failed: $LAST_ERROR"
             echo ""
             
             if [ $ATTEMPT -lt $MAX_RETRIES ]; then
@@ -178,19 +264,40 @@ while [ $ATTEMPT -le $MAX_RETRIES ]; do
                 echo "💡 RECOMMENDED ACTION (before retry):"
                 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 echo ""
-                echo "Pre-create canister IDs to avoid CaLM reservation issues:"
-                echo "   $ ./frontend/deploy/ic-precreate-canisters.sh"
-                echo ""
-                echo "This allocates canister IDs before deployment, which often resolves CaLM failures."
-                echo ""
+                
+                if [ "$AUTO_PRECREATE" = "true" ] && [ "$PRECREATE_RAN" = "false" ]; then
+                    echo "Running canister pre-creation automatically..."
+                    echo ""
+                    if ./frontend/deploy/ic-precreate-canisters.sh; then
+                        PRECREATE_RAN=true
+                        echo ""
+                        echo "✅ Canister pre-creation completed"
+                        echo ""
+                    else
+                        echo ""
+                        echo "⚠️  Canister pre-creation failed, but will retry deployment anyway"
+                        echo ""
+                    fi
+                else
+                    echo "Pre-create canister IDs to avoid reservation issues:"
+                    echo "   $ ./frontend/deploy/ic-precreate-canisters.sh"
+                    echo ""
+                    echo "This allocates canister IDs before deployment, which often resolves"
+                    echo "canister reservation and creation failures."
+                    echo ""
+                    echo "Alternatively, run this script with --auto-precreate flag to automatically"
+                    echo "run the pre-creation step when reservation failures are detected."
+                    echo ""
+                fi
+                
                 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 echo ""
                 echo "⏳ Retrying in ${RETRY_DELAY} seconds..."
                 sleep $RETRY_DELAY
             fi
         else
-            # Other error
-            LAST_ERROR_TYPE="OTHER"
+            # Other/generic error
+            LAST_ERROR_TYPE="GENERIC"
             LAST_ERROR=$(echo "$DEPLOY_OUTPUT" | tail -20)
             
             echo ""
@@ -215,22 +322,48 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "Attempted $MAX_RETRIES deployment(s), all failed."
 echo ""
-echo "Last failure reason: $LAST_ERROR_TYPE"
+echo "Last failure type: $LAST_ERROR_TYPE"
 echo ""
 
-if [ "$LAST_ERROR_TYPE" = "CaLM" ]; then
+if [ "$LAST_ERROR_TYPE" = "CANISTER_RESERVATION" ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🔧 NEXT STEPS FOR CaLM FAILURES:"
+    echo "🔧 NEXT STEPS FOR CANISTER RESERVATION/CREATION FAILURES:"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "1. Pre-create canister IDs:"
     echo "   $ ./frontend/deploy/ic-precreate-canisters.sh"
     echo ""
     echo "2. Retry deployment:"
+    echo "   $ ./frontend/deploy/ic-deploy-with-retry.sh"
+    echo ""
+    echo "   OR deploy directly:"
     echo "   $ dfx deploy --network ic"
     echo ""
-    echo "   OR run this script again:"
-    echo "   $ ./frontend/deploy/ic-deploy-with-retry.sh"
+elif [ "$LAST_ERROR_TYPE" = "GENERIC" ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "🔧 GENERIC FAILURE DIAGNOSTICS:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "📋 Deployment logs saved to:"
+    echo "   ${LOG_DIR}/deploy-output-attempt-*.log"
+    echo ""
+    echo "Last error lines from attempt $((ATTEMPT - 1)):"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    tail -15 "${LOG_DIR}/deploy-output-attempt-$((ATTEMPT - 1)).log" 2>/dev/null || echo "(Log file not available)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "🔍 TROUBLESHOOTING STEPS:"
+    echo ""
+    echo "1. Review the full error output in the log files above"
+    echo "2. Check your network connection"
+    echo "3. Verify cycles balance:"
+    echo "   $ dfx wallet balance --network ic"
+    echo "4. Verify dfx version (requires 0.15.0+):"
+    echo "   $ dfx --version"
+    echo "5. Check IC network status: https://status.internetcomputer.org/"
+    echo "6. Try pre-creating canisters:"
+    echo "   $ ./frontend/deploy/ic-precreate-canisters.sh"
+    echo "7. Try again later (IC network may be experiencing issues)"
     echo ""
 else
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -239,8 +372,10 @@ else
     echo ""
     echo "1. Review the error output above"
     echo "2. Check your network connection"
-    echo "3. Verify cycles balance: dfx wallet balance --network ic"
-    echo "4. Try again later (IC network may be experiencing issues)"
+    echo "3. Verify cycles balance:"
+    echo "   $ dfx wallet balance --network ic"
+    echo "4. Check IC network status: https://status.internetcomputer.org/"
+    echo "5. Try again later (IC network may be experiencing issues)"
     echo ""
 fi
 
@@ -248,8 +383,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "📚 Detailed troubleshooting: frontend/docs/deployment-troubleshooting.md"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "Deployment logs saved to: /tmp/deploy-output-attempt-*.log"
+echo "📋 All deployment logs saved to: ${LOG_DIR}/deploy-output-attempt-*.log"
 echo ""
 
 exit 1
-

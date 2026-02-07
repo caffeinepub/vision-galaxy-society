@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T14:12:27.050Z",
+  "generatedAt": "2026-02-06T17:05:28.584Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,26 +12,29 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the secretary Settings page so that editing any of the configuration fields (Monthly Maintenance Amount, Society UPI ID, Guard Mobile Number) correctly marks the form as changed and allows saving, instead of incorrectly showing/behaving like there is “No changes to save”.",
+        "summary": "When an IC mainnet deploy/build fails with a generic failure (e.g., the platform reports \"Application creation unsuccessful\"), provide a clear, actionable troubleshooting path by improving deploy output and documentation so a developer can immediately identify the likely cause (identity/wallet/cycles/CaLM reservation/dfx issues) and the next command(s) to run.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/secretary/SettingsPage.tsx",
-          "frontend/src/utils/settingsValidation.ts"
+          "frontend/deploy/ic-deploy-with-retry.sh",
+          "frontend/docs/deployment-troubleshooting.md",
+          "frontend/deploy/README.md"
         ],
         "matchedFiles": [
-          "frontend/src/pages/secretary/SettingsPage.tsx",
-          "frontend/src/utils/settingsValidation.ts"
+          "frontend/deploy/ic-deploy-with-retry.sh",
+          "frontend/docs/deployment-troubleshooting.md"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Ensure the secretary Settings page baseline state is not stale across settings refetches or identity/actor changes, so the dirty-check reflects the currently loaded backend settings for the current logged-in principal.",
+        "summary": "Enhance the existing deployment retry workflow to reduce repeated failures by automatically recommending and/or invoking the canister pre-creation step when the deployment output indicates canister reservation or creation problems (including, but not limited to, CaLM reservation failures).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/secretary/SettingsPage.tsx"
+          "frontend/deploy/ic-deploy-with-retry.sh",
+          "frontend/docs/deployment-troubleshooting.md"
         ],
         "matchedFiles": [
-          "frontend/src/pages/secretary/SettingsPage.tsx"
+          "frontend/deploy/ic-deploy-with-retry.sh",
+          "frontend/docs/deployment-troubleshooting.md"
         ]
       }
     ]
@@ -41,8 +44,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/secretary/SettingsPage.tsx",
-    "frontend/src/utils/settingsValidation.ts",
+    "frontend/deploy/ic-deploy-with-retry.sh",
+    "frontend/docs/deployment-troubleshooting.md",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

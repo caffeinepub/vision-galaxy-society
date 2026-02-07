@@ -50,3 +50,51 @@ export function isValidFlatNumber(flatNumber: string | number | bigint): boolean
 export function formatFlatNumber(flatNumber: string | number | bigint): string {
   return `Flat ${flatNumber}`;
 }
+
+/**
+ * Gets the next valid flat number from the current value
+ * @param currentValue - The current flat number (may be empty, invalid, or valid)
+ * @returns The next valid flat number as a string
+ */
+export function getNextFlatNumber(currentValue: string): string {
+  const validFlats = getValidFlatNumbers();
+  
+  // If empty or invalid, return the first valid flat
+  if (!currentValue || !isValidFlatNumber(currentValue)) {
+    return validFlats[0];
+  }
+  
+  const currentNum = Number(currentValue);
+  const currentIndex = validFlats.findIndex(flat => Number(flat) === currentNum);
+  
+  // If at the end, wrap to the beginning
+  if (currentIndex === -1 || currentIndex === validFlats.length - 1) {
+    return validFlats[0];
+  }
+  
+  return validFlats[currentIndex + 1];
+}
+
+/**
+ * Gets the previous valid flat number from the current value
+ * @param currentValue - The current flat number (may be empty, invalid, or valid)
+ * @returns The previous valid flat number as a string
+ */
+export function getPreviousFlatNumber(currentValue: string): string {
+  const validFlats = getValidFlatNumbers();
+  
+  // If empty or invalid, return the last valid flat
+  if (!currentValue || !isValidFlatNumber(currentValue)) {
+    return validFlats[validFlats.length - 1];
+  }
+  
+  const currentNum = Number(currentValue);
+  const currentIndex = validFlats.findIndex(flat => Number(flat) === currentNum);
+  
+  // If at the beginning, wrap to the end
+  if (currentIndex === -1 || currentIndex === 0) {
+    return validFlats[validFlats.length - 1];
+  }
+  
+  return validFlats[currentIndex - 1];
+}

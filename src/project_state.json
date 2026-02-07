@@ -4,21 +4,21 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Secretary profile settings changes are not being saved; system reports \"nothing to change\"."
+    "Build/deployment failed with error: \"Application creation unsuccessful\" (user requested retry)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-secretary-settings-page-so-that-editing-any-of-the-configuration-fields-monthly-maintenance-amount-society-upi-id-guard-mobile-number-correctly-marks-the-form-as-changed-and-allows-saving-instead-of-incorrectly-showing-behaving-like-there-is-no-changes-to-save",
-      "title": "Fix the secretary Settings page so that editing any of the configuration fields (Monthly Maintenance Amount, Society UPI ID, Guard Mobile Number) correctly marks the form as changed and allows saving, instead of incorrectly showing/behaving like there is “No changes to save”.",
+      "id": "feature-when-an-ic-mainnet-deploy-build-fails-with-a-generic-failure-e-g-the-platform-reports-application-creation-unsuccessful-provide-a-clear-actionable-troubleshooting-path-by-improving-deploy-output-and-documentation-so-a-developer-can-immediately-identify-the-likely-cause-identity-wallet-cycles-calm-reservation-dfx-issues-and-the-next-command-s-to-run",
+      "title": "When an IC mainnet deploy/build fails with a generic failure (e.g., the platform reports \"Application creation unsuccessful\"), provide a clear, actionable troubleshooting path by improving deploy output and documentation so a developer can immediately identify the likely cause (identity/wallet/cycles/CaLM reservation/dfx issues) and the next command(s) to run.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-the-secretary-settings-page-baseline-state-is-not-stale-across-settings-refetches-or-identity-actor-changes-so-the-dirty-check-reflects-the-currently-loaded-backend-settings-for-the-current-logged-in-principal",
-      "title": "Ensure the secretary Settings page baseline state is not stale across settings refetches or identity/actor changes, so the dirty-check reflects the currently loaded backend settings for the current logged-in principal.",
+      "id": "feature-enhance-the-existing-deployment-retry-workflow-to-reduce-repeated-failures-by-automatically-recommending-and-or-invoking-the-canister-pre-creation-step-when-the-deployment-output-indicates-canister-reservation-or-creation-problems-including-but-not-limited-to-calm-reservation-failures",
+      "title": "Enhance the existing deployment retry workflow to reduce repeated failures by automatically recommending and/or invoking the canister pre-creation step when the deployment output indicates canister reservation or creation problems (including, but not limited to, CaLM reservation failures).",
       "reqIds": [
         "REQ-2"
       ],
@@ -26,7 +26,7 @@
     }
   ],
   "new_feature_requests": [],
-  "projectName": "Fix secretary settings not saving due to incorrect 'No changes to save' dirty-check",
+  "projectName": "Improve deployment retry and diagnostics for failed application creation",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

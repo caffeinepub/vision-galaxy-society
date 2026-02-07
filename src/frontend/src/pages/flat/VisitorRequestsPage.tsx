@@ -3,11 +3,11 @@ import { useGetCallerUserProfile, useGetVisitorRequestsByFlat, useUpdateVisitorR
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { isValidFlatNumber } from '../../utils/flatNumbers';
+import FlatNumberPicker from '../../components/FlatNumberPicker';
 
 export default function FlatVisitorRequestsPage() {
   const { data: userProfile } = useGetCallerUserProfile();
@@ -144,12 +144,12 @@ export default function FlatVisitorRequestsPage() {
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <Label htmlFor={`flat-${request.id}`}>Confirm Flat Number</Label>
-                      <Input
+                      <FlatNumberPicker
                         id={`flat-${request.id}`}
-                        type="text"
-                        placeholder="Enter flat number (e.g., 101)"
                         value={flatNumberInputs[request.id.toString()] || ''}
-                        onChange={(e) => handleFlatNumberChange(request.id.toString(), e.target.value)}
+                        onChange={(value) => handleFlatNumberChange(request.id.toString(), value)}
+                        placeholder="Type or select flat number"
+                        disabled={updateStatusMutation.isPending}
                       />
                     </div>
                     <div className="flex gap-3">
