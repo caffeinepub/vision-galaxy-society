@@ -50,6 +50,7 @@ while [[ $# -gt 0 ]]; do
             echo "  MAX_RETRIES          Same as --max-retries"
             echo "  RETRY_DELAY          Same as --retry-delay"
             echo "  AUTO_PRECREATE       Same as --auto-precreate (set to 'true')"
+            echo "  VITE_CANONICAL_APP_URL  Custom domain URL (loaded from .env if present)"
             echo ""
             echo "Example:"
             echo "  $0 --max-retries 5 --retry-delay 60 --auto-precreate"
@@ -173,6 +174,14 @@ echo ""
 echo "✅ Cycles/wallet readiness check passed"
 echo ""
 
+# ==================== Load Canonical URL from Environment ====================
+
+# Try to load VITE_CANONICAL_APP_URL from .env file if it exists and not already set
+if [ -z "$VITE_CANONICAL_APP_URL" ] && [ -f "frontend/.env" ]; then
+    # Source the .env file safely (only VITE_CANONICAL_APP_URL)
+    VITE_CANONICAL_APP_URL=$(grep "^VITE_CANONICAL_APP_URL=" frontend/.env 2>/dev/null | cut -d '=' -f2- | tr -d '"' | tr -d "'" || echo "")
+fi
+
 # ==================== Deployment with Retry Logic ====================
 
 ATTEMPT=1
@@ -204,20 +213,29 @@ while [ $ATTEMPT -le $MAX_RETRIES ]; do
         if [ -n "$FRONTEND_CANISTER_ID" ]; then
             echo "📱 Your application is now live and publicly accessible!"
             echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🆔 Frontend Canister ID:"
+            echo ""
+            echo "   $FRONTEND_CANISTER_ID"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
             
-            # Check if VITE_CANONICAL_APP_URL is set
+            # Determine and display the live URL
             if [ -n "$VITE_CANONICAL_APP_URL" ]; then
                 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                echo "🌐 Access your app at:"
+                echo "🌐 Live Frontend URL (Canonical):"
                 echo ""
                 echo "   $VITE_CANONICAL_APP_URL"
                 echo ""
                 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 echo ""
                 echo "   (Using canonical URL from VITE_CANONICAL_APP_URL)"
+                echo ""
+                echo "   Default IC URL: https://${FRONTEND_CANISTER_ID}.ic0.app"
             else
                 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                echo "🌐 Access your app at:"
+                echo "🌐 Live Frontend URL:"
                 echo ""
                 echo "   https://${FRONTEND_CANISTER_ID}.ic0.app"
                 echo ""
@@ -226,8 +244,6 @@ while [ $ATTEMPT -le $MAX_RETRIES ]; do
                 echo "💡 Tip: Set VITE_CANONICAL_APP_URL to use a custom domain"
                 echo "   See: frontend/.env.example and frontend/deploy/README.md"
             fi
-            echo ""
-            echo "Frontend canister ID: $FRONTEND_CANISTER_ID"
             echo ""
         else
             echo "Your canisters are now live on the Internet Computer."
@@ -333,18 +349,21 @@ if [ "$LAST_ERROR_TYPE" = "CANISTER_RESERVATION" ]; then
     echo "1. Pre-create canister IDs:"
     echo "   $ ./frontend/deploy/ic-precreate-canisters.sh"
     echo ""
-    echo "2. Retry deployment:"
+    echo "2. Retry deployment with this script:"
     echo "   $ ./frontend/deploy/ic-deploy-with-retry.sh"
     echo ""
     echo "   OR deploy directly:"
     echo "   $ dfx deploy --network ic"
+    echo ""
+    echo "📋 Full deployment logs saved to:"
+    echo "   ${LOG_DIR}/deploy-output-attempt-*.log"
     echo ""
 elif [ "$LAST_ERROR_TYPE" = "GENERIC" ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "🔧 GENERIC FAILURE DIAGNOSTICS:"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "📋 Deployment logs saved to:"
+    echo "📋 Full deployment logs saved to:"
     echo "   ${LOG_DIR}/deploy-output-attempt-*.log"
     echo ""
     echo "Last error lines from attempt $((ATTEMPT - 1)):"
@@ -377,13 +396,14 @@ else
     echo "4. Check IC network status: https://status.internetcomputer.org/"
     echo "5. Try again later (IC network may be experiencing issues)"
     echo ""
+    echo "📋 Full deployment logs saved to:"
+    echo "   ${LOG_DIR}/deploy-output-attempt-*.log"
+    echo ""
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📚 Detailed troubleshooting: frontend/docs/deployment-troubleshooting.md"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "📋 All deployment logs saved to: ${LOG_DIR}/deploy-output-attempt-*.log"
 echo ""
 
 exit 1

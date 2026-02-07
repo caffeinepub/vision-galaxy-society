@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T17:05:28.584Z",
+  "generatedAt": "2026-02-07T05:19:43.302Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,29 +12,28 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "When an IC mainnet deploy/build fails with a generic failure (e.g., the platform reports \"Application creation unsuccessful\"), provide a clear, actionable troubleshooting path by improving deploy output and documentation so a developer can immediately identify the likely cause (identity/wallet/cycles/CaLM reservation/dfx issues) and the next command(s) to run.",
+        "summary": "Redeploy the current version to the Internet Computer (network: ic) using the existing retry-based deployment workflow, and ensure the final deployment output includes (1) the live frontend URL and (2) the frontend canister ID.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/deploy/ic-deploy-with-retry.sh",
-          "frontend/docs/deployment-troubleshooting.md",
-          "frontend/deploy/README.md"
+          "frontend/deploy/README.md",
+          "frontend/.env.example"
         ],
         "matchedFiles": [
           "frontend/deploy/ic-deploy-with-retry.sh",
-          "frontend/docs/deployment-troubleshooting.md"
+          "frontend/.env.example"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Enhance the existing deployment retry workflow to reduce repeated failures by automatically recommending and/or invoking the canister pre-creation step when the deployment output indicates canister reservation or creation problems (including, but not limited to, CaLM reservation failures).",
+        "summary": "If mainnet redeploy fails, capture the exact deployment error output, classify the failure as either (A) canister reservation/creation failure (including CaLM) or (B) generic failure, and provide next-step remediation instructions aligned with the existing deployment scripts (including pre-creating canisters and rerunning deployment with retries).",
         "status": "implemented",
         "plannedFiles": [
           "frontend/deploy/ic-deploy-with-retry.sh",
           "frontend/docs/deployment-troubleshooting.md"
         ],
         "matchedFiles": [
-          "frontend/deploy/ic-deploy-with-retry.sh",
-          "frontend/docs/deployment-troubleshooting.md"
+          "frontend/deploy/ic-deploy-with-retry.sh"
         ]
       }
     ]
@@ -44,8 +43,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/.env.example",
     "frontend/deploy/ic-deploy-with-retry.sh",
-    "frontend/docs/deployment-troubleshooting.md",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -3,22 +3,20 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [
-    "Build/deployment failed with error: \"Application creation unsuccessful\" (user requested retry)."
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-when-an-ic-mainnet-deploy-build-fails-with-a-generic-failure-e-g-the-platform-reports-application-creation-unsuccessful-provide-a-clear-actionable-troubleshooting-path-by-improving-deploy-output-and-documentation-so-a-developer-can-immediately-identify-the-likely-cause-identity-wallet-cycles-calm-reservation-dfx-issues-and-the-next-command-s-to-run",
-      "title": "When an IC mainnet deploy/build fails with a generic failure (e.g., the platform reports \"Application creation unsuccessful\"), provide a clear, actionable troubleshooting path by improving deploy output and documentation so a developer can immediately identify the likely cause (identity/wallet/cycles/CaLM reservation/dfx issues) and the next command(s) to run.",
+      "id": "feature-redeploy-the-current-version-to-the-internet-computer-network-ic-using-the-existing-retry-based-deployment-workflow-and-ensure-the-final-deployment-output-includes-1-the-live-frontend-url-and-2-the-frontend-canister-id",
+      "title": "Redeploy the current version to the Internet Computer (network: ic) using the existing retry-based deployment workflow, and ensure the final deployment output includes (1) the live frontend URL and (2) the frontend canister ID.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-enhance-the-existing-deployment-retry-workflow-to-reduce-repeated-failures-by-automatically-recommending-and-or-invoking-the-canister-pre-creation-step-when-the-deployment-output-indicates-canister-reservation-or-creation-problems-including-but-not-limited-to-calm-reservation-failures",
-      "title": "Enhance the existing deployment retry workflow to reduce repeated failures by automatically recommending and/or invoking the canister pre-creation step when the deployment output indicates canister reservation or creation problems (including, but not limited to, CaLM reservation failures).",
+      "id": "feature-if-mainnet-redeploy-fails-capture-the-exact-deployment-error-output-classify-the-failure-as-either-a-canister-reservation-creation-failure-including-calm-or-b-generic-failure-and-provide-next-step-remediation-instructions-aligned-with-the-existing-deployment-scripts-including-pre-creating-canisters-and-rerunning-deployment-with-retries",
+      "title": "If mainnet redeploy fails, capture the exact deployment error output, classify the failure as either (A) canister reservation/creation failure (including CaLM) or (B) generic failure, and provide next-step remediation instructions aligned with the existing deployment scripts (including pre-creating canisters and rerunning deployment with retries).",
       "reqIds": [
         "REQ-2"
       ],
@@ -26,7 +24,7 @@
     }
   ],
   "new_feature_requests": [],
-  "projectName": "Improve deployment retry and diagnostics for failed application creation",
+  "projectName": "Redeploy app to IC mainnet and provide live URL + failure remediation",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

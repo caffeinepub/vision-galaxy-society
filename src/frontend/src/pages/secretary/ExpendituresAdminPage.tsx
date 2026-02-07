@@ -10,6 +10,7 @@ import { Download, Printer, Loader2, Plus, Trash2 } from 'lucide-react';
 import { generateCSV, downloadCSV } from '../../utils/csv';
 import { openPrintView } from '../../utils/print';
 import { toast } from 'sonner';
+import { QueryStateCard } from '../../components/QueryStateCard';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -28,7 +29,7 @@ export default function ExpendituresAdminPage() {
   const [items, setItems] = useState<ExpenditureItem[]>([{ description: '', amount: '' }]);
   const [notes, setNotes] = useState('');
 
-  const { data: expenditure, isLoading, error } = useGetExpenditures(selectedMonth, BigInt(selectedYear));
+  const { data: expenditure, isLoading, error, refetch } = useGetExpenditures(selectedMonth, BigInt(selectedYear));
   const recordMutation = useRecordExpenditure();
 
   const handleAddItem = () => {
@@ -143,14 +144,6 @@ export default function ExpendituresAdminPage() {
         </div>
       </div>
 
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-destructive text-sm">Error loading expenditures: {String(error)}</p>
-          </CardContent>
-        </Card>
-      )}
-
       {isLoading ? (
         <Card>
           <CardContent className="py-12">
@@ -159,6 +152,16 @@ export default function ExpendituresAdminPage() {
             </div>
           </CardContent>
         </Card>
+      ) : error ? (
+        <QueryStateCard
+          isLoading={false}
+          isError={true}
+          error={error}
+          onRetry={refetch}
+          title="Error Loading Expenditures"
+        >
+          <></>
+        </QueryStateCard>
       ) : expenditure ? (
         <Card>
           <CardHeader>

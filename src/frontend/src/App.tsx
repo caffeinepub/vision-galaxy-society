@@ -4,18 +4,21 @@ import { useGetCallerUserProfile } from './hooks/useQueries';
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ActorProvider } from './contexts/ActorContext';
+import { useActorContext } from './hooks/useActorContext';
 import LoginPage from './pages/LoginPage';
 import FlatDashboardPage from './pages/flat/FlatDashboardPage';
 import SecretaryDashboardPage from './pages/secretary/SecretaryDashboardPage';
 import GuardDashboardPage from './pages/guard/GuardDashboardPage';
 import MaintenancePage from './pages/flat/MaintenancePage';
 import ComplaintsPage from './pages/flat/ComplaintsPage';
+import ProfilePage from './pages/flat/ProfilePage';
 import NoticesPage from './pages/common/NoticesPage';
 import VisitorRequestsPage from './pages/flat/VisitorRequestsPage';
 import NotificationsPage from './pages/common/NotificationsPage';
 import PaymentsPage from './pages/secretary/PaymentsPage';
 import ComplaintsAdminPage from './pages/secretary/ComplaintsAdminPage';
 import ExpendituresAdminPage from './pages/secretary/ExpendituresAdminPage';
+import OverduePage from './pages/secretary/OverduePage';
 import SettingsPage from './pages/secretary/SettingsPage';
 import GuardVisitorRequestsPage from './pages/guard/VisitorRequestsPage';
 import VisitorRequestCreatePage from './pages/guard/VisitorRequestCreatePage';
@@ -31,6 +34,7 @@ import { sanitizeError } from './utils/sanitizeError';
 
 function AuthenticatedApp() {
   const { identity, clear } = useInternetIdentity();
+  const { actorError, refetchActor } = useActorContext();
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity;
 
@@ -47,7 +51,7 @@ function AuthenticatedApp() {
   useEffect(() => {
     if (isAuthenticated && !profileLoading && isFetched && userProfile === null) {
       setShowProfileSetup(true);
-    } else {
+    } else if (userProfile !== null) {
       setShowProfileSetup(false);
     }
   }, [isAuthenticated, profileLoading, isFetched, userProfile]);
@@ -57,14 +61,34 @@ function AuthenticatedApp() {
     queryClient.clear();
   };
 
+  const handleRetry = () => {
+    if (actorError) {
+      refetchActor();
+    } else if (profileError) {
+      refetchProfile();
+    }
+  };
+
   if (!isAuthenticated) {
     return <LoginPage />;
   }
 
+  // Show actor initialization errors first
+  if (actorError) {
+    return (
+      <StartupErrorScreen
+        onRetry={handleRetry}
+        onLogout={handleLogout}
+        errorDetail={sanitizeError(actorError)}
+      />
+    );
+  }
+
+  // Then show profile errors
   if (profileError) {
     return (
       <StartupErrorScreen
-        onRetry={() => refetchProfile()}
+        onRetry={handleRetry}
         onLogout={handleLogout}
         errorDetail={sanitizeError(profileError)}
       />
@@ -89,7 +113,7 @@ function AuthenticatedApp() {
   if (!userProfile) {
     return (
       <StartupErrorScreen
-        onRetry={() => refetchProfile()}
+        onRetry={handleRetry}
         onLogout={handleLogout}
         errorDetail="Unable to load user profile. Please try again."
       />
@@ -125,12 +149,17 @@ function AuthenticatedApp() {
       }),
       createRoute({
         getParentRoute: () => rootRoute,
-        path: '/complaints',
+        path: '/overdue',
+        component: OverduePage,
+      }),
+      createRoute({
+        getParentRoute: () => rootRoute,
+        path: '/complaints/admin',
         component: ComplaintsAdminPage,
       }),
       createRoute({
         getParentRoute: () => rootRoute,
-        path: '/expenditures',
+        path: '/expenditures/admin',
         component: ExpendituresAdminPage,
       }),
       createRoute({
@@ -208,6 +237,11 @@ function AuthenticatedApp() {
 
     routes = [
       indexRoute,
+      createRoute({
+        getParentRoute: () => rootRoute,
+        path: '/profile',
+        component: ProfilePage,
+      }),
       createRoute({
         getParentRoute: () => rootRoute,
         path: '/maintenance',

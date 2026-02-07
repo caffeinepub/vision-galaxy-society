@@ -11,6 +11,9 @@ interface State {
 }
 
 export default class StartupErrorBoundary extends Component<Props, State> {
+  private errorHandler?: (event: ErrorEvent) => void;
+  private rejectionHandler?: (event: PromiseRejectionEvent) => void;
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -26,13 +29,13 @@ export default class StartupErrorBoundary extends Component<Props, State> {
 
   componentDidMount() {
     // Capture unhandled errors during early startup
-    const handleError = (event: ErrorEvent) => {
+    this.errorHandler = (event: ErrorEvent) => {
       console.error('Unhandled error during startup:', event.error);
       this.setState({ hasError: true, error: event.error });
       event.preventDefault();
     };
 
-    const handleRejection = (event: PromiseRejectionEvent) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       console.error('Unhandled promise rejection during startup:', event.reason);
       this.setState({ 
         hasError: true, 
@@ -41,14 +44,27 @@ export default class StartupErrorBoundary extends Component<Props, State> {
       event.preventDefault();
     };
 
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleRejection);
+    window.addEventListener('error', this.errorHandler);
+    window.addEventListener('unhandledrejection', this.rejectionHandler);
 
-    // Cleanup after a short delay (only catch early startup errors)
+    // Cleanup after startup window (extended to match actor timeout)
     setTimeout(() => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleRejection);
-    }, 5000);
+      if (this.errorHandler) {
+        window.removeEventListener('error', this.errorHandler);
+      }
+      if (this.rejectionHandler) {
+        window.removeEventListener('unhandledrejection', this.rejectionHandler);
+      }
+    }, 35000); // 35 seconds to cover actor init timeout + buffer
+  }
+
+  componentWillUnmount() {
+    if (this.errorHandler) {
+      window.removeEventListener('error', this.errorHandler);
+    }
+    if (this.rejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.rejectionHandler);
+    }
   }
 
   render() {

@@ -2,11 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-when-an-ic-mainnet-deploy-build-fails-with-a-generic-failure-e-g-the-platform-reports-application-creation-unsuccessful-provide-a-clear-actionable-troubleshooting-path-by-improving-deploy-output-and-documentation-so-a-developer-can-immediately-identify-the-likely-cause-identity-wallet-cycles-calm-reservation-dfx-issues-and-the-next-command-s-to-run",
-      "featureTitle": "When an IC mainnet deploy/build fails with a generic failure (e.g., the platform reports \"Application creation unsuccessful\"), provide a clear, actionable troubleshooting path by improving deploy output and documentation so a developer can immediately identify the likely cause (identity/wallet/cycles/CaLM reservation/dfx issues) and the next command(s) to run.",
+      "featureId": "feature-redeploy-the-current-version-to-the-internet-computer-network-ic-using-the-existing-retry-based-deployment-workflow-and-ensure-the-final-deployment-output-includes-1-the-live-frontend-url-and-2-the-frontend-canister-id",
+      "featureTitle": "Redeploy the current version to the Internet Computer (network: ic) using the existing retry-based deployment workflow, and ensure the final deployment output includes (1) the live frontend URL and (2) the frontend canister ID.",
       "files": [
-        "frontend/deploy/ic-deploy-with-retry.sh",
-        "frontend/docs/deployment-troubleshooting.md"
+        "frontend/.env.example",
+        "frontend/deploy/ic-deploy-with-retry.sh"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,11 +23,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-enhance-the-existing-deployment-retry-workflow-to-reduce-repeated-failures-by-automatically-recommending-and-or-invoking-the-canister-pre-creation-step-when-the-deployment-output-indicates-canister-reservation-or-creation-problems-including-but-not-limited-to-calm-reservation-failures",
-      "featureTitle": "Enhance the existing deployment retry workflow to reduce repeated failures by automatically recommending and/or invoking the canister pre-creation step when the deployment output indicates canister reservation or creation problems (including, but not limited to, CaLM reservation failures).",
+      "featureId": "feature-if-mainnet-redeploy-fails-capture-the-exact-deployment-error-output-classify-the-failure-as-either-a-canister-reservation-creation-failure-including-calm-or-b-generic-failure-and-provide-next-step-remediation-instructions-aligned-with-the-existing-deployment-scripts-including-pre-creating-canisters-and-rerunning-deployment-with-retries",
+      "featureTitle": "If mainnet redeploy fails, capture the exact deployment error output, classify the failure as either (A) canister reservation/creation failure (including CaLM) or (B) generic failure, and provide next-step remediation instructions aligned with the existing deployment scripts (including pre-creating canisters and rerunning deployment with retries).",
       "files": [
-        "frontend/deploy/ic-deploy-with-retry.sh",
-        "frontend/docs/deployment-troubleshooting.md"
+        "frontend/deploy/ic-deploy-with-retry.sh"
       ],
       "components": [
         "authorization@4.0.0",

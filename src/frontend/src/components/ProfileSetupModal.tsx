@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useSaveCallerUserProfile } from '../hooks/useQueries';
+import { useState } from 'react';
+import { useSaveCallerUserProfile, useGetCallerUserProfile } from '../hooks/useQueries';
 import { isValidFlatNumber } from '../utils/flatNumbers';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,14 +15,7 @@ export default function ProfileSetupModal() {
   const [userType, setUserType] = useState<string>('');
   const [flatNumber, setFlatNumber] = useState('');
   const saveProfileMutation = useSaveCallerUserProfile();
-
-  // Close modal automatically when profile is saved successfully
-  useEffect(() => {
-    if (saveProfileMutation.isSuccess) {
-      // The modal will be hidden by the parent component when userProfile becomes non-null
-      // No need to do anything here, just let the mutation complete
-    }
-  }, [saveProfileMutation.isSuccess]);
+  const { refetch: refetchProfile } = useGetCallerUserProfile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +51,8 @@ export default function ProfileSetupModal() {
 
     try {
       await saveProfileMutation.mutateAsync(profile);
+      // Wait for backend confirmation before closing modal
+      await refetchProfile();
       toast.success('Profile created successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to create profile');
@@ -82,12 +77,13 @@ export default function ProfileSetupModal() {
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your full name"
               required
+              disabled={saveProfileMutation.isPending}
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="userType">Role</Label>
-            <Select value={userType} onValueChange={setUserType} required>
+            <Select value={userType} onValueChange={setUserType} required disabled={saveProfileMutation.isPending}>
               <SelectTrigger id="userType">
                 <SelectValue placeholder="Select your role" />
               </SelectTrigger>
@@ -107,6 +103,7 @@ export default function ProfileSetupModal() {
                 value={flatNumber}
                 onChange={setFlatNumber}
                 placeholder="Type or select flat number"
+                disabled={saveProfileMutation.isPending}
               />
             </div>
           )}

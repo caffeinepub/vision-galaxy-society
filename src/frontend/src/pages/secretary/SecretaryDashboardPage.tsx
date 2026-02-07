@@ -3,14 +3,23 @@ import { useGetOverdueFlats } from '../../hooks/useQueries';
 import { getCurrentMonth, getCurrentYear } from '../../utils/dates';
 import { isOverduePeriod } from '../../utils/overdue';
 import DashboardCard from '../../components/layout/DashboardCard';
-import { CreditCard, AlertCircle, FileText, MessageSquare, Bell, Settings } from 'lucide-react';
+import { CreditCard, AlertCircle, FileText, MessageSquare, Bell, Settings, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { sanitizeError } from '../../utils/sanitizeError';
 
 export default function SecretaryDashboardPage() {
   const navigate = useNavigate();
   const currentMonth = getCurrentMonth();
   const currentYear = getCurrentYear();
+  const showOverdueCard = isOverduePeriod();
 
-  const { data: overdueFlats = [] } = useGetOverdueFlats(currentMonth, currentYear);
+  const { 
+    data: overdueFlats = [], 
+    isLoading: overdueLoading,
+    error: overdueError,
+    refetch: refetchOverdue
+  } = useGetOverdueFlats(currentMonth, currentYear, showOverdueCard);
 
   return (
     <div className="space-y-6">
@@ -30,17 +39,42 @@ export default function SecretaryDashboardPage() {
           }}
         />
 
-        {isOverduePeriod() && (
+        {showOverdueCard && (
           <DashboardCard
             title="Overdue"
-            description={`${overdueFlats.length} flats overdue`}
+            description={
+              overdueLoading 
+                ? 'Loading overdue flats...' 
+                : overdueError 
+                ? 'Error loading overdue data'
+                : `${overdueFlats.length} flats overdue`
+            }
             icon={AlertCircle}
             variant={overdueFlats.length > 0 ? 'warning' : 'default'}
             action={{
               label: 'View Overdue',
               onClick: () => navigate({ to: '/overdue' }),
             }}
-          />
+          >
+            {overdueError && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertDescription className="text-xs flex items-center justify-between gap-2">
+                  <span>{sanitizeError(overdueError)}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      refetchOverdue();
+                    }}
+                    className="h-6 px-2"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+          </DashboardCard>
         )}
 
         <DashboardCard

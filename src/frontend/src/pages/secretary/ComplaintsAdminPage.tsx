@@ -3,12 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Download, Printer, Loader2 } from 'lucide-react';
+import { Download, Printer } from 'lucide-react';
 import { generateCSV, downloadCSV } from '../../utils/csv';
 import { openPrintView } from '../../utils/print';
+import { QueryStateCard } from '../../components/QueryStateCard';
 
 export default function ComplaintsAdminPage() {
-  const { data: complaints = [], isLoading, error } = useGetAllComplaints();
+  const { data: complaints = [], isLoading, error, refetch } = useGetAllComplaints();
 
   const handleExportCSV = () => {
     const csvData = complaints.map(complaint => ({
@@ -51,14 +52,6 @@ export default function ComplaintsAdminPage() {
         </div>
       </div>
 
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-destructive text-sm">Error loading complaints: {String(error)}</p>
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
@@ -86,23 +79,24 @@ export default function ComplaintsAdminPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Complaints</CardTitle>
-          <CardDescription>
-            Complaints from all flats
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : complaints.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No complaints found</p>
-            </div>
-          ) : (
+      <QueryStateCard
+        isLoading={isLoading}
+        isError={!!error}
+        error={error}
+        isEmpty={complaints.length === 0}
+        emptyMessage="No complaints found"
+        onRetry={refetch}
+        title="All Complaints"
+        description="Complaints from all flats"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>All Complaints</CardTitle>
+            <CardDescription>
+              Complaints from all flats
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -141,9 +135,9 @@ export default function ComplaintsAdminPage() {
                 </TableBody>
               </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </QueryStateCard>
     </div>
   );
 }

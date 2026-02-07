@@ -6,12 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { QueryStateCard } from '../../components/QueryStateCard';
 
 export default function ProfilePage() {
   const { data: userProfile } = useGetCallerUserProfile();
   const flatNumber = userProfile?.flatNumber || BigInt(0);
   
-  const { data: mobileNumbers = [] } = useGetFlatMobileNumbers(flatNumber);
+  const { 
+    data: mobileNumbers = [], 
+    isLoading: numbersLoading, 
+    isError: numbersError, 
+    error: numbersErrorDetail,
+    refetch: refetchNumbers 
+  } = useGetFlatMobileNumbers(flatNumber);
+  
   const updateMobileNumbersMutation = useUpdateFlatMobileNumbers();
 
   const [numbers, setNumbers] = useState<string[]>([]);
@@ -19,10 +27,10 @@ export default function ProfilePage() {
   useEffect(() => {
     if (mobileNumbers.length > 0) {
       setNumbers(mobileNumbers);
-    } else {
+    } else if (!numbersLoading && !numbersError) {
       setNumbers(['']);
     }
-  }, [mobileNumbers]);
+  }, [mobileNumbers, numbersLoading, numbersError]);
 
   const handleAddNumber = () => {
     if (numbers.length >= 4) {
@@ -73,62 +81,71 @@ export default function ProfilePage() {
         <p className="text-muted-foreground mt-1">Manage your contact information</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Mobile Numbers</CardTitle>
-          <CardDescription>
-            Add up to 4 mobile numbers for receiving visitor approval requests
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            {numbers.map((number, index) => (
-              <div key={index} className="flex gap-3">
-                <div className="flex-1 space-y-2">
-                  <Label>Mobile Number {index + 1}</Label>
-                  <Input
-                    value={number}
-                    onChange={(e) => handleNumberChange(index, e.target.value)}
-                    placeholder="+919876543210"
-                  />
+      <QueryStateCard
+        isLoading={numbersLoading}
+        isError={numbersError}
+        error={numbersErrorDetail}
+        onRetry={refetchNumbers}
+        title="Mobile Numbers"
+        description="Add up to 4 mobile numbers for receiving visitor approval requests"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Mobile Numbers</CardTitle>
+            <CardDescription>
+              Add up to 4 mobile numbers for receiving visitor approval requests
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              {numbers.map((number, index) => (
+                <div key={index} className="flex gap-3">
+                  <div className="flex-1 space-y-2">
+                    <Label>Mobile Number {index + 1}</Label>
+                    <Input
+                      value={number}
+                      onChange={(e) => handleNumberChange(index, e.target.value)}
+                      placeholder="+919876543210"
+                    />
+                  </div>
+                  {numbers.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveNumber(index)}
+                      className="mt-8"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-                {numbers.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveNumber(index)}
-                    className="mt-8"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {numbers.length < 4 && (
+            {numbers.length < 4 && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleAddNumber} 
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Mobile Number
+              </Button>
+            )}
+
             <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleAddNumber} 
+              onClick={handleSave}
+              disabled={updateMobileNumbersMutation.isPending}
               className="w-full"
+              size="lg"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Mobile Number
+              {updateMobileNumbersMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
-          )}
-
-          <Button 
-            onClick={handleSave}
-            disabled={updateMobileNumbersMutation.isPending}
-            className="w-full"
-            size="lg"
-          >
-            {updateMobileNumbersMutation.isPending ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </QueryStateCard>
     </div>
   );
 }

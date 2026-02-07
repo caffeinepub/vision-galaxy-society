@@ -135,6 +135,7 @@ export interface _SERVICE {
   'markAllNotificationsAsRead' : ActorMethod<[], undefined>,
   'markNotificationAsRead' : ActorMethod<[bigint], undefined>,
   'notifyOverdueFlats' : ActorMethod<[string, bigint], undefined>,
+  'promoteToSecretary' : ActorMethod<[Principal], undefined>,
   'recordExpenditure' : ActorMethod<
     [string, bigint, Array<[string, bigint]>, bigint, [] | [string]],
     undefined

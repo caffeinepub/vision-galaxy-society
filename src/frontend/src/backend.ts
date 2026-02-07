@@ -200,6 +200,7 @@ export interface backendInterface {
     markAllNotificationsAsRead(): Promise<void>;
     markNotificationAsRead(notificationId: bigint): Promise<void>;
     notifyOverdueFlats(month: string, year: bigint): Promise<void>;
+    promoteToSecretary(user: Principal): Promise<void>;
     recordExpenditure(month: string, year: bigint, items: Array<[string, bigint]>, totalAmount: bigint, notes: string | null): Promise<void>;
     recordPayment(flatNumber: bigint, month: string, year: bigint, upiRef: string, timestamp: Time): Promise<void>;
     requestApproval(): Promise<void>;
@@ -674,6 +675,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.notifyOverdueFlats(arg0, arg1);
+            return result;
+        }
+    }
+    async promoteToSecretary(arg0: Principal): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.promoteToSecretary(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.promoteToSecretary(arg0);
             return result;
         }
     }

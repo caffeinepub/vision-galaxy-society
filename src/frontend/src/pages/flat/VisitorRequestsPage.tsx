@@ -47,7 +47,7 @@ export default function FlatVisitorRequestsPage() {
     try {
       await updateStatusMutation.mutateAsync({
         requestId,
-        status: 'Approved',
+        newStatus: 'Approved',
       });
       toast.success('Visitor request approved!');
       // Clear the input after successful approval
@@ -65,7 +65,7 @@ export default function FlatVisitorRequestsPage() {
     try {
       await updateStatusMutation.mutateAsync({
         requestId,
-        status: 'Declined',
+        newStatus: 'Declined',
       });
       toast.success('Visitor request declined');
       // Clear the input after declining

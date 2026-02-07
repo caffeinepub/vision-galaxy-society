@@ -40,8 +40,8 @@ export function useSaveCallerUserProfile() {
       await actor.saveCallerUserProfile(profile);
       return profile;
     },
-    onSuccess: (savedProfile) => {
-      queryClient.setQueryData(['currentUserProfile'], savedProfile);
+    onSuccess: () => {
+      // Invalidate to trigger refetch - do not optimistically set
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
@@ -89,16 +89,22 @@ export function useRecordPayment() {
   });
 }
 
-export function useGetOverdueFlats(month: string, year: bigint) {
+export function useGetOverdueFlats(month: string, year: bigint, enabled: boolean = true) {
   const { actor, actorFetching } = useActorContext();
 
   return useQuery<bigint[]>({
     queryKey: ['overdueFlats', month, year.toString()],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getOverdueFlats(month, year);
+      try {
+        return await actor.getOverdueFlats(month, year);
+      } catch (error) {
+        console.error('[Overdue Flats] Query failed:', error);
+        throw error;
+      }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && enabled,
+    retry: false,
   });
 }
 
@@ -186,38 +192,6 @@ export function useSetWhatsappNumber() {
   });
 }
 
-export function useGetSecretarySettings() {
-  const { actor, actorFetching } = useActorContext();
-
-  return useQuery<SecretarySettings>({
-    queryKey: ['secretarySettings'],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getSecretarySettings();
-    },
-    enabled: !!actor && !actorFetching,
-    retry: 1,
-  });
-}
-
-export function useUpdateSecretarySettings() {
-  const { actor } = useActorContext();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (newSettings: SecretarySettings) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateSecretarySettings(newSettings);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['secretarySettings'] });
-      queryClient.invalidateQueries({ queryKey: ['maintenanceAmount'] });
-      queryClient.invalidateQueries({ queryKey: ['upiId'] });
-      queryClient.invalidateQueries({ queryKey: ['whatsappNumber'] });
-    },
-  });
-}
-
 export function useGetMaintenanceAmount() {
   const { actor, actorFetching } = useActorContext();
 
@@ -240,7 +214,7 @@ export function useGetFlatMobileNumbers(flatNumber: bigint) {
       if (!actor) return [];
       return actor.getFlatMobileNumbers(flatNumber);
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && flatNumber > BigInt(0),
   });
 }
 
@@ -284,7 +258,7 @@ export function useGetComplaintsByFlat(flatNumber: bigint) {
       if (!actor) return [];
       return actor.getComplaintsByFlat(flatNumber);
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && flatNumber > BigInt(0),
   });
 }
 
@@ -317,6 +291,19 @@ export function useUpdateComplaintStatus() {
   });
 }
 
+export function useGetAllNotices() {
+  const { actor, actorFetching } = useActorContext();
+
+  return useQuery<Notice[]>({
+    queryKey: ['allNotices'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllNotices();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
 export function useCreateNotice() {
   const { actor } = useActorContext();
   const queryClient = useQueryClient();
@@ -333,19 +320,6 @@ export function useCreateNotice() {
   });
 }
 
-export function useGetAllNotices() {
-  const { actor, actorFetching } = useActorContext();
-
-  return useQuery<Notice[]>({
-    queryKey: ['allNotices'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllNotices();
-    },
-    enabled: !!actor && !actorFetching,
-  });
-}
-
 export function useCreateVisitorRequest() {
   const { actor } = useActorContext();
   const queryClient = useQueryClient();
@@ -356,9 +330,39 @@ export function useCreateVisitorRequest() {
       return actor.createVisitorRequest(visitorName, purpose, flatNumber, mobileNumber);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allVisitorRequests'] });
       queryClient.invalidateQueries({ queryKey: ['visitorRequestsByFlat'] });
+      queryClient.invalidateQueries({ queryKey: ['allVisitorRequests'] });
     },
+  });
+}
+
+export function useUpdateVisitorRequestStatus() {
+  const { actor } = useActorContext();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, newStatus }: { requestId: bigint; newStatus: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateVisitorRequestStatus(requestId, newStatus);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['visitorRequestsByFlat'] });
+      queryClient.invalidateQueries({ queryKey: ['allVisitorRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
+    },
+  });
+}
+
+export function useGetVisitorRequestsByFlat(flatNumber: bigint) {
+  const { actor, actorFetching } = useActorContext();
+
+  return useQuery<VisitorRequest[]>({
+    queryKey: ['visitorRequestsByFlat', flatNumber.toString()],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getVisitorRequestsByFlat(flatNumber);
+    },
+    enabled: !!actor && !actorFetching && flatNumber > BigInt(0),
   });
 }
 
@@ -375,36 +379,6 @@ export function useGetAllVisitorRequests() {
   });
 }
 
-export function useGetVisitorRequestsByFlat(flatNumber: bigint) {
-  const { actor, actorFetching } = useActorContext();
-
-  return useQuery<VisitorRequest[]>({
-    queryKey: ['visitorRequestsByFlat', flatNumber.toString()],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getVisitorRequestsByFlat(flatNumber);
-    },
-    enabled: !!actor && !actorFetching,
-  });
-}
-
-export function useUpdateVisitorRequestStatus() {
-  const { actor } = useActorContext();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ requestId, status }: { requestId: bigint; status: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateVisitorRequestStatus(requestId, status);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allVisitorRequests'] });
-      queryClient.invalidateQueries({ queryKey: ['visitorRequestsByFlat'] });
-      queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
-    },
-  });
-}
-
 export function useGetCallerNotifications() {
   const { actor, actorFetching } = useActorContext();
 
@@ -415,7 +389,6 @@ export function useGetCallerNotifications() {
       return actor.getCallerNotifications();
     },
     enabled: !!actor && !actorFetching,
-    refetchInterval: 30000,
   });
 }
 
@@ -449,6 +422,37 @@ export function useMarkAllNotificationsAsRead() {
   });
 }
 
+export function useGetSecretarySettings() {
+  const { actor, actorFetching } = useActorContext();
+
+  return useQuery<SecretarySettings>({
+    queryKey: ['secretarySettings'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getSecretarySettings();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useUpdateSecretarySettings() {
+  const { actor } = useActorContext();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (newSettings: SecretarySettings) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateSecretarySettings(newSettings);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['secretarySettings'] });
+      queryClient.invalidateQueries({ queryKey: ['maintenanceAmount'] });
+      queryClient.invalidateQueries({ queryKey: ['upiId'] });
+      queryClient.invalidateQueries({ queryKey: ['whatsappNumber'] });
+    },
+  });
+}
+
 export function useGetExpenditures(month: string, year: bigint) {
   const { actor, actorFetching } = useActorContext();
 
@@ -473,6 +477,21 @@ export function useRecordExpenditure() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['expenditures', variables.month, variables.year.toString()] });
+    },
+  });
+}
+
+export function useNotifyOverdueFlats() {
+  const { actor } = useActorContext();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ month, year }: { month: string; year: bigint }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.notifyOverdueFlats(month, year);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['callerNotifications'] });
     },
   });
 }

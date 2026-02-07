@@ -156,6 +156,13 @@ actor {
     };
   };
 
+  func isCallerSecretary(caller : Principal) : Bool {
+    switch (userProfiles.get(caller)) {
+      case (?profile) { profile.userType == "Secretary" };
+      case (null) { false };
+    };
+  };
+
   func getAllFlatOwnerPrincipals() : [Principal] {
     let flatOwners = List.empty<Principal>();
     for ((principal, profile) in userProfiles.entries()) {
@@ -208,6 +215,13 @@ actor {
         };
       };
       case (null) {};
+    };
+  };
+
+  // IMPORTANT: Consistent Secretary Authorization Check
+  func secretaryGuard(caller : Principal) : () {
+    if (not (isCallerSecretary(caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only secretary or admin can perform this action");
     };
   };
 
@@ -297,21 +311,50 @@ actor {
     };
 
     userProfiles.add(caller, profile);
+
+    // Auto-approve users based on profile type and ensure they have user role
+    switch (profile.userType) {
+      case ("FlatOwner") {
+        UserApproval.setApproval(approvalState, caller, #approved);
+      };
+      case ("Guard") {
+        UserApproval.setApproval(approvalState, caller, #approved);
+      };
+      case ("Secretary") {
+        UserApproval.setApproval(approvalState, caller, #approved);
+      };
+      case (_) {};
+    };
+  };
+
+  // Promote user to Secretary (admin role) - must be called by existing admin
+  public shared ({ caller }) func promoteToSecretary(user : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can promote users to Secretary");
+    };
+
+    switch (userProfiles.get(user)) {
+      case (?profile) {
+        if (profile.userType != "Secretary") {
+          Runtime.trap("User profile must have userType 'Secretary' to be promoted");
+        };
+        AccessControl.assignRole(accessControlState, caller, user, #admin);
+      };
+      case (null) {
+        Runtime.trap("User profile not found");
+      };
+    };
   };
 
   // Setup / Config
 
   public shared ({ caller }) func setUpiId(newUpiId : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
     upiId := newUpiId;
   };
 
   public shared ({ caller }) func setWhatsappNumber(newNumber : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
     whatsappNumber := newNumber;
   };
 
@@ -343,9 +386,7 @@ actor {
   };
 
   public shared ({ caller }) func updateSecretarySettings(newSettings : SecretarySettings) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
 
     if (newSettings.maintenanceAmount == 0) {
       Runtime.trap("Invalid maintenance amount: Must be non-zero");
@@ -435,9 +476,7 @@ actor {
   };
 
   public query ({ caller }) func getOverdueFlats(month : Text, year : Nat) : async [Nat] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
     let overdue = List.empty<Nat>();
     for ((key, record) in maintenanceRecords.entries()) {
       if (not record.isPaid and record.month == month and record.year == year) {
@@ -448,9 +487,7 @@ actor {
   };
 
   public shared ({ caller }) func notifyOverdueFlats(month : Text, year : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
     for ((key, record) in maintenanceRecords.entries()) {
       if (not record.isPaid and record.month == month and record.year == year) {
         checkAndNotifyOverdueMaintenance(record.flatNumber, month, year);
@@ -460,9 +497,7 @@ actor {
 
   // Returns [FlatPaymentStatus] for 101-523 with all maintained flat numbers. Empty for Extra Flats.
   public query ({ caller }) func getMaintenanceStatusForAllFlats(month : Text, year : Nat) : async [FlatPaymentStatus] {
-    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
 
     let flats = List.empty<FlatPaymentStatus>();
 
@@ -520,9 +555,7 @@ actor {
   };
 
   public shared ({ caller }) func updateComplaintStatus(complaintId : Nat, newStatus : Text, resolutionNote : ?Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
     switch (complaints.get(complaintId)) {
       case (?complaint) {
         let updatedComplaint = {
@@ -557,9 +590,7 @@ actor {
   // Notices
 
   public shared ({ caller }) func createNotice(title : Text, message : Text, expiryDate : ?Time.Time) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
     let newNotice : Notice = {
       id = noticeIdCounter;
       title;
@@ -708,18 +739,14 @@ actor {
   };
 
   public shared ({ caller }) func initializePassword(userId : Text, password : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
     passwords.add(userId, password);
   };
 
   // Secretary Reporting
 
   public query ({ caller }) func getAllMaintenanceRecords(month : Text, year : Nat) : async [MaintenanceRecord] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
 
     let records = maintenanceRecords.values().toArray();
     records.filter(
@@ -730,9 +757,7 @@ actor {
   };
 
   public query ({ caller }) func getAllComplaints() : async [Complaint] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
     complaints.values().toArray();
   };
 
@@ -743,9 +768,7 @@ actor {
   };
 
   public shared ({ caller }) func recordExpenditure(month : Text, year : Nat, items : [(Text, Nat)], totalAmount : Nat, notes : ?Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
+    secretaryGuard(caller);
 
     let expenditure : Expenditure = {
       month;
@@ -759,3 +782,4 @@ actor {
     expenditures.add(key, expenditure);
   };
 };
+

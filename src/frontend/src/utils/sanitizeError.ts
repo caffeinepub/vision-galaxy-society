@@ -42,10 +42,32 @@ export function sanitizeError(error: unknown): string {
     // Extract the user-friendly part after "Unauthorized:"
     const parts = message.split('Unauthorized:');
     if (parts.length > 1) {
-      message = 'Access denied: ' + parts[1].trim();
+      const detail = parts[1].trim();
+      // Check for specific authorization scenarios
+      if (detail.includes('must be approved')) {
+        return 'Access denied: Your account is pending approval. Please contact the administrator.';
+      } else if (detail.includes('Only secretary') || detail.includes('Only admin')) {
+        return 'Access denied: This feature is only available to secretaries and administrators.';
+      } else if (detail.includes('Only admins') || detail.includes('Only users')) {
+        return 'Access denied: You do not have permission to access this resource.';
+      } else if (detail.includes('Can only')) {
+        return 'Access denied: ' + detail;
+      } else {
+        return 'Access denied: ' + detail;
+      }
     } else {
-      message = 'You do not have permission to perform this action.';
+      return 'Access denied: You do not have permission to perform this action.';
     }
+  }
+
+  // Handle "not found" scenarios that might be authorization issues
+  if (message.toLowerCase().includes('not found') && message.toLowerCase().includes('profile')) {
+    return 'Unable to load profile. Please ensure you are logged in and try again.';
+  }
+
+  // Handle timeout errors
+  if (message.toLowerCase().includes('timeout') || message.toLowerCase().includes('timed out')) {
+    return 'Connection timeout: The request took too long to complete. Please check your network connection and try again.';
   }
 
   // Truncate overly long messages

@@ -1,61 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Improve deployment retry and diagnostics for failed application creation",
+  "title": "Redeploy app to IC mainnet and provide live URL + failure remediation",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "When an IC mainnet deploy/build fails with a generic failure (e.g., the platform reports \"Application creation unsuccessful\"), provide a clear, actionable troubleshooting path by improving deploy output and documentation so a developer can immediately identify the likely cause (identity/wallet/cycles/CaLM reservation/dfx issues) and the next command(s) to run.",
+      "text": "Redeploy the current version to the Internet Computer (network: ic) using the existing retry-based deployment workflow, and ensure the final deployment output includes (1) the live frontend URL and (2) the frontend canister ID.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-7",
-          "msg-8"
+          "msg-3"
         ],
         "quotes": [
-          "❌ Application creation unsuccessful",
-          "That build didn’t go through — want me to try again?",
-          "Yes"
+          "Live it"
         ]
       },
       "acceptanceCriteria": [
-        "Deployment helper output includes a dedicated section for generic failures that: (1) points to the saved log file location, (2) prints the last relevant error lines, and (3) links to the local troubleshooting doc path.",
-        "Troubleshooting documentation explicitly includes the failure text \"Application creation unsuccessful\" as a symptom and lists concrete checks/commands (dfx version, identity, wallet, cycles balance, pre-create canisters, retry deploy).",
-        "No user-facing documentation text uses non-English language."
+        "Running the deployment workflow completes a successful `dfx deploy --network ic` for the project.",
+        "On success, the output clearly shows the frontend canister ID (e.g., from `dfx canister id frontend --network ic`).",
+        "On success, the output clearly shows a live frontend URL (either `VITE_CANONICAL_APP_URL` when set, or `https://<frontend_canister_id>.ic0.app`)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Enhance the existing deployment retry workflow to reduce repeated failures by automatically recommending and/or invoking the canister pre-creation step when the deployment output indicates canister reservation or creation problems (including, but not limited to, CaLM reservation failures).",
+      "text": "If mainnet redeploy fails, capture the exact deployment error output, classify the failure as either (A) canister reservation/creation failure (including CaLM) or (B) generic failure, and provide next-step remediation instructions aligned with the existing deployment scripts (including pre-creating canisters and rerunning deployment with retries).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-7",
-          "msg-8"
+          "msg-3"
         ],
         "quotes": [
-          "❌ Application creation unsuccessful",
-          "That build didn’t go through — want me to try again?",
-          "Yes"
+          "Live it"
         ]
       },
       "acceptanceCriteria": [
-        "If deploy output matches a canister reservation/creation failure pattern, the deploy helper prints a prominent instruction to run `./frontend/deploy/ic-precreate-canisters.sh` before the next retry (or performs that step when a non-interactive safe mode flag is enabled, if implemented).",
-        "Retry attempts continue to save per-attempt logs to a deterministic location and print that location at the end of the script execution.",
-        "The deployment helper continues to support the existing CaLM-specific detection behavior and does not regress successful deploy output (frontend URL/canister ID)."
+        "For failed deployments, full stdout/stderr is saved to log files under `frontend/deploy/logs` for each attempt.",
+        "Failure classification distinguishes canister reservation/creation failures (e.g., CaLM reservation issues, canister creation/reservation failures) from generic failures.",
+        "When classified as canister reservation/creation failure, instructions include running `./frontend/deploy/ic-precreate-canisters.sh` and then rerunning `./frontend/deploy/ic-deploy-with-retry.sh` (or deploying directly with `dfx deploy --network ic`).",
+        "When classified as generic failure, output provides the last error lines and points to `frontend/docs/deployment-troubleshooting.md` for further steps."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/components/ui (read-only).",
-    "Do not modify frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, or frontend/src/main.tsx (immutable paths).",
-    "Backend must remain a single Motoko actor in backend/main.mo; only add a migration if backend stable state changes (not expected for deployment-script/doc changes)."
+    "Backend must remain a single Motoko actor in `backend/main.mo`; do not introduce additional backend services.",
+    "Do not modify files under `frontend/src/components/ui` or other immutable frontend paths specified by SYSTEM_CONTEXT.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Fixing in-app performance/unresponsiveness, payment totals showing as zero, or the Secretary Settings \"Save Configuration\" button behavior (tracked separately in existing feature requirements REQ-1 to REQ-4 in project_state.json).",
-    "Adding any third-party CI/CD, cloud deployment, or external infrastructure integrations."
+    "Adding new product features to the app itself (UI/backend functionality unrelated to deployment).",
+    "Introducing non-IC deployment targets or third-party hosting providers."
   ],
   "imageRequirements": {
     "required": [],

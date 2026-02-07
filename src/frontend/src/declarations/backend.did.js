@@ -160,6 +160,7 @@ export const idlService = IDL.Service({
   'markAllNotificationsAsRead' : IDL.Func([], [], []),
   'markNotificationAsRead' : IDL.Func([IDL.Nat], [], []),
   'notifyOverdueFlats' : IDL.Func([IDL.Text, IDL.Nat], [], []),
+  'promoteToSecretary' : IDL.Func([IDL.Principal], [], []),
   'recordExpenditure' : IDL.Func(
       [
         IDL.Text,
@@ -362,6 +363,7 @@ export const idlFactory = ({ IDL }) => {
     'markAllNotificationsAsRead' : IDL.Func([], [], []),
     'markNotificationAsRead' : IDL.Func([IDL.Nat], [], []),
     'notifyOverdueFlats' : IDL.Func([IDL.Text, IDL.Nat], [], []),
+    'promoteToSecretary' : IDL.Func([IDL.Principal], [], []),
     'recordExpenditure' : IDL.Func(
         [
           IDL.Text,

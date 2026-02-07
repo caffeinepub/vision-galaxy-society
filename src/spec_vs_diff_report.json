@@ -1,70 +1,68 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T17:05:28.582Z",
-  "summary": "Diff includes significant unrelated frontend feature work plus additions to deployment helper script and a troubleshooting doc. The troubleshooting doc shown does not include the required symptom text, and the deploy script changes are truncated so key acceptance-criteria behaviors (generic-failure section, log tailing, deterministic per-attempt logs, reservation-failure detection messaging) cannot be verified from the provided diff summary.",
+  "generatedAt": "2026-02-07T05:19:43.300Z",
+  "summary": "The diff primarily changes frontend application/UI code and adds/updates deployment-related guidance/configuration, but it does not provide clear evidence that the IC mainnet redeploy workflow now (a) outputs the frontend canister ID + live URL on success or (b) logs each failed attempt to frontend/deploy/logs and classifies failures with prescribed remediation. Several non-deployment product/UI features appear to have been modified/added despite being non-goals.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Troubleshooting documentation explicitly includes the failure text \"Application creation unsuccessful\" as a symptom and lists concrete checks/commands (dfx version, identity, wallet, cycles balance, pre-create canisters, retry deploy).",
-      "reason": "The provided content of frontend/docs/deployment-troubleshooting.md does not mention the symptom text \"Application creation unsuccessful\" anywhere in the shown excerpt, so this specific documentation requirement is not evidenced as implemented.",
+      "requirement": "Redeploy to IC mainnet (network: ic) using the existing retry-based workflow and ensure final deployment output includes the live frontend URL and the frontend canister ID.",
+      "reason": "Although frontend/deploy/ic-deploy-with-retry.sh was modified, the provided (truncated) diff content does not show logic that prints the frontend canister ID (e.g., via `dfx canister id frontend --network ic`) and does not show the final live URL output (either VITE_CANONICAL_APP_URL or https://<id>.ic0.app).",
       "evidence": [
-        "frontend/docs/deployment-troubleshooting.md"
-      ]
-    },
-    {
-      "id": "REQ-1",
-      "requirement": "Deployment helper output includes a dedicated section for generic failures that: (1) points to the saved log file location, (2) prints the last relevant error lines, and (3) links to the local troubleshooting doc path.",
-      "reason": "The deploy helper script is truncated and the shown portions only include early preflight error messages pointing to the troubleshooting doc; there is no visible implementation of a dedicated generic-failure section that also prints last error lines and log-file location.",
-      "evidence": [
-        "frontend/deploy/ic-deploy-with-retry.sh"
+        "frontend/deploy/ic-deploy-with-retry.sh (truncated)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "If deploy output matches a canister reservation/creation failure pattern, the deploy helper prints a prominent instruction to run `./frontend/deploy/ic-precreate-canisters.sh` before the next retry (or performs that step when a non-interactive safe mode flag is enabled, if implemented).",
-      "reason": "The script shows an `--auto-precreate`/`AUTO_PRECREATE` option but the diff is truncated before any deploy-output pattern matching or the actual prominent instruction/invocation can be confirmed.",
+      "requirement": "On mainnet redeploy failure, capture exact error output, save full stdout/stderr logs per attempt under frontend/deploy/logs, classify failure as canister reservation/creation (incl. CaLM) vs generic, and print aligned remediation instructions (precreate + rerun, or point to troubleshooting doc with last error lines).",
+      "reason": "The diff does not show any concrete implementation evidence of per-attempt stdout/stderr log file creation under `frontend/deploy/logs`, failure-type classification (CaLM/reservation vs generic), or the required conditional remediation messaging. The script references troubleshooting docs, but the required logging/classification behavior is not evidenced in the truncated content.",
       "evidence": [
-        "frontend/deploy/ic-deploy-with-retry.sh"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Retry attempts continue to save per-attempt logs to a deterministic location and print that location at the end of the script execution.",
-      "reason": "The deploy script content is truncated before any retry loop/logging logic is shown; deterministic per-attempt log saving and printing the location at the end cannot be verified from the provided excerpt.",
-      "evidence": [
-        "frontend/deploy/ic-deploy-with-retry.sh"
+        "frontend/deploy/ic-deploy-with-retry.sh (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Large set of unrelated frontend UI/features (visitor requests pages, secretary dashboard/payments changes, notifications page, profile setup modal, layout/logo hardening, CSS theme/print styling).",
-      "reason": "BuildRequest focuses on deployment retry/diagnostics and documentation; it does not request new visitor-request flows, secretary/payment UI work, notifications UI, branding/logo behavior changes, or global CSS/theme updates.",
+      "description": "Multiple frontend UI/application functionality changes unrelated to deployment (startup actor error screen; new/expanded visitor request pages; notifications page; secretary dashboard/payments changes; query-hook behavior changes).",
+      "reason": "The BuildRequest explicitly lists non-goals as adding new product features unrelated to deployment, yet many frontend runtime/UI files were modified with functional changes.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (truncated): frontend/src/App.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/pages/guard/VisitorRequestsPage.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/pages/guard/VisitorRequestCreatePage.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/pages/guard/VisitorRequestDetailPage.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/pages/flat/VisitorRequestsPage.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/pages/common/NotificationsPage.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/hooks/useQueries.ts",
+        "frontend-file-summaries.txt (truncated): frontend/src/pages/secretary/SecretaryDashboardPage.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/pages/secretary/PaymentsPage.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/components/layout/AppLayout.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/components/ProfileSetupModal.tsx",
+        "frontend-file-summaries.txt (truncated): frontend/src/pages/LoginPage.tsx"
       ]
     },
     {
-      "description": "PWA/service worker/manifest changes and mobile installation documentation.",
-      "reason": "BuildRequest explicitly targets IC deployment failure diagnostics and retry workflow; PWA caching/manifest and mobile install docs are not requested.",
+      "description": "PWA-related additions/changes (install hook, service worker cache changes, manifest behavior, mobile/PWA documentation) beyond the stated deployment-only scope.",
+      "reason": "The request is focused on IC mainnet redeploy output and failure remediation; PWA install flow and service worker/manifest changes are new product/deployment-adjacent features not requested.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (truncated): frontend/src/hooks/usePwaInstall.ts",
+        "frontend-file-summaries.txt (truncated): frontend/public/sw.js",
+        "frontend-file-summaries.txt (truncated): frontend/public/manifest.webmanifest",
+        "frontend-file-summaries.txt (truncated): frontend/README.mobile-and-deploy.md"
       ]
     },
     {
-      "description": "Router/actor/auth flow refactors (App.tsx, useQueries.ts switching actor initialization behavior).",
-      "reason": "Not requested by REQ-1/REQ-2 (deployment helper and troubleshooting docs); these are application runtime behavior changes unrelated to deploy-script output/diagnostics.",
+      "description": "Canonical URL redirect/runtime behavior changes in frontend entry HTML that go beyond the explicit requirement to print a live URL in deployment output.",
+      "reason": "REQ-1 requires the deployment output to show a live URL; it does not request implementing redirect logic in the app’s index.html.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (truncated): frontend/index.html"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.68,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/.env.example",
     "frontend/deploy/ic-deploy-with-retry.sh",
-    "frontend/docs/deployment-troubleshooting.md",
     "project_state.json"
   ]
 }

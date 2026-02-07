@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Improve IC mainnet deployment failure diagnostics and retry guidance so developers can quickly identify causes and take the correct next steps when app creation fails.
+**Goal:** Redeploy the current app version to the Internet Computer mainnet (network: `ic`) and provide clear deployment outputs (live URL + frontend canister ID), with failure logging, classification, and remediation steps when deployment fails.
 
 **Planned changes:**
-- Update the deployment helper output to include a dedicated “generic failure” section that points to the saved log location, prints the last relevant error lines, and links to a local troubleshooting doc path.
-- Add/expand local troubleshooting documentation to include the symptom text “Application creation unsuccessful” and provide concrete checks/commands (dfx version, identity, wallet, cycles balance, pre-create canisters, retry deploy), written in English only.
-- Enhance the retry workflow to detect canister reservation/creation failures (including CaLM-related patterns) and prominently instruct running `./frontend/deploy/ic-precreate-canisters.sh` before the next retry (and optionally perform it when a safe non-interactive mode is enabled, if implemented).
-- Ensure retry attempts continue saving per-attempt logs to a deterministic location and printing that location at script completion, without regressing successful deploy output (frontend URL/canister ID).
+- Run the existing retry-based IC mainnet deployment workflow to complete a successful `dfx deploy --network ic`.
+- Ensure deployment output clearly includes the frontend canister ID and a live frontend URL (`VITE_CANONICAL_APP_URL` if set, otherwise `https://<frontend_canister_id>.ic0.app`).
+- If deployment fails, capture full stdout/stderr logs per attempt under `frontend/deploy/logs`, classify the failure (canister reservation/creation vs generic), and provide aligned remediation steps (including pre-creating canisters and rerunning deploy-with-retry, or pointing to deployment troubleshooting docs).
 
-**User-visible outcome:** When a deploy fails with generic “Application creation unsuccessful” messaging, developers see clearer diagnostics (log path + relevant error tail) and a direct troubleshooting path; when canister reservation/creation issues are detected, the retry flow guides (and optionally automates) pre-creating canisters to reduce repeated failures.
+**User-visible outcome:** The app is live on IC mainnet with a shared URL, and deployment results include the frontend canister ID; if deployment fails, there are saved logs plus clear next steps to resolve and redeploy.
